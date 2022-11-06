@@ -3,6 +3,10 @@ const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const session = require('express-session');
+const mongoDbStore = require('connect-mongodb-session')(session);
+
+const MONGODB_URI = require('./mongodburi');
 
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
@@ -12,10 +16,22 @@ const authRoutes = require('./routes/auth');
 const User = require('./models/user');
 
 const app = express();
+const store = new mongoDbStore({
+    uri: MONGODB_URI,
+    collection: 'sessions'
+});
 
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(
+    session({
+        secret: 'secret placeholder',
+        resave: false,
+        saveUninitialized: false,
+        store: store
+    })
+);
 
 app.use((req, res, next) => {
     User
@@ -32,16 +48,10 @@ app.use(shopRoutes);
 app.use(authRoutes);
 app.use(errorRoutes);
 
-
-const mongodbUsername = 'nodejs_server';
-const mongodbPassword = 'HStmJy1UnSJKEm0D';
-const mongodbLink = 'cluster0.vcp6z5f';
-const mongodbKey = 'mongodb+srv://' + mongodbUsername + ':' + mongodbPassword +'@' + mongodbLink + '.mongodb.net/shop?retryWrites=true&w=majority';
-
 //connects to the database and then launches server if successfull
 mongoose
 .connect(
-    mongodbKey
+    MONGODB_URI
 )
 .then(() => {
     console.log('mongodb connection successfull');
