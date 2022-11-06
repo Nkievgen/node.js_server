@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
 const errorRoutes = require('./routes/errors');
+const authRoutes = require('./routes/auth');
 
 const User = require('./models/user');
 
@@ -28,11 +29,13 @@ app.use((req, res, next) => {
 
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
+app.use(authRoutes);
 app.use(errorRoutes);
 
-const mongodbUsername = '';
-const mongodbPassword = '';
-const mongodbLink = '';
+
+const mongodbUsername = 'nodejs_server';
+const mongodbPassword = 'HStmJy1UnSJKEm0D';
+const mongodbLink = 'cluster0.vcp6z5f';
 const mongodbKey = 'mongodb+srv://' + mongodbUsername + ':' + mongodbPassword +'@' + mongodbLink + '.mongodb.net/shop?retryWrites=true&w=majority';
 
 //connects to the database and then launches server if successfull
