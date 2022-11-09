@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="/css/forms.css">
 <div class="backdrop"></div>
 <header class="main-header">
     <button id="side-menu-toggle">Menu</button>
@@ -30,6 +31,11 @@
             <ul class="main-header__item-list">
                 <li class="main-header__item">
                     <p class="active">Logged in as <%= userName %></a>
+                </li>
+                <li class="form-control">
+                    <form action="/logout" method="post">
+                        <button class="btn" type ="submit">Logout</button>
+                    </form>
                 </li>
             </ul>
         <% } else {%>
