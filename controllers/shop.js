@@ -1,9 +1,19 @@
 const Product = require('../models/product');
 const Order = require('../models/order');
+const User = require('../models/user');
 
 //fetches products from db and renders index page, same as product list page
 exports.getIndex = (req, res, next) => {
     console.log('handling get index request');
+    let userId;
+    let userName;
+    if (req.session.user) {
+        userId = req.session.user._id;
+        userName = req.session.user.name;
+    } else {
+        userId = false;
+        userName = false;
+    }
     Product
         .find()
         .then(products => {
@@ -11,7 +21,9 @@ exports.getIndex = (req, res, next) => {
             res.render('./shop/index', {
                 prods: products,
                 pageTitle: "Shop",
-                path: "/"
+                path: "/",
+                userId: userId,
+                userName: userName
             });
         }).catch(err =>
             console.log(err)
@@ -21,6 +33,15 @@ exports.getIndex = (req, res, next) => {
 //fetches products from db and renders product list page
 exports.getProductList = (req, res, next) => {
     console.log('handling get product list request');
+    let userId;
+    let userName;
+    if (req.session.user) {
+        userId = req.session.user._id;
+        userName = req.session.user.name;
+    } else {
+        userId = false;
+        userName = false;
+    }
     Product
         .find()
         .then(products => {
@@ -28,7 +49,9 @@ exports.getProductList = (req, res, next) => {
             res.render('./shop/product-list',{
                 prods: products,
                 pageTitle: "Product List",
-                path: "/product-list"
+                path: "/product-list",
+                userId: userId,
+                userName: userName
             });
         })
         .catch(err =>
@@ -39,6 +62,8 @@ exports.getProductList = (req, res, next) => {
 //fetches product data for a specific product and passes it to prod details page
 exports.getProductDetails = (req, res, next) => {
     const searchId = req.params.productId;
+    const userId = req.session.user._id;
+    const userName = req.session.user.name;
     console.log('handling get product details request');
     Product
         .findById(searchId)
@@ -47,7 +72,9 @@ exports.getProductDetails = (req, res, next) => {
             res.render('./shop/product-details',{
                 product: product,
                 pageTitle: product.title,
-                path: "/product-list"
+                path: "/product-list",
+                userId: userId,
+                userName: userName
             });
         })
         .catch(err =>
@@ -58,7 +85,11 @@ exports.getProductDetails = (req, res, next) => {
 //fetches cart data from user model and renders cart controller
 exports.getCart = (req, res, next) => {
     console.log('handling get cart request');
-    req.user
+    //console.log('session user: ' + req.session.user);
+    const userId = req.session.user._id;
+    const userName = req.session.user.name;
+    User
+        .findById(userId)
         .populate('cart.items.productId')
         .then(user => {
             const products = user.cart.items;
@@ -66,6 +97,8 @@ exports.getCart = (req, res, next) => {
                 pageTitle: "Cart",
                 path: "/cart",
                 prods: products,
+                userId: userId,
+                userName: userName
             });
         })
         .catch(err => console.log(err));
@@ -75,10 +108,16 @@ exports.getCart = (req, res, next) => {
 exports.postCart = (req, res, next) => {
     console.log('handling post cart request');
     const cartProductId = req.body.productId;
+    const userId = req.session.userId;
+    let foundProduct;
     Product
         .findById(cartProductId)
         .then(product => {
-            return req.user.addToCart(product)
+            foundProduct = product;
+            return User.findById(userId);
+        })
+        .then(user => {
+            return user.addToCart(foundProduct);
         })
         .then(() => {
             res.redirect('/cart');
@@ -90,8 +129,12 @@ exports.postCart = (req, res, next) => {
 exports.removeFromCart = (req, res, next) => {
     console.log('handling remove product from cart request');
     const prodId = req.body.productId;
-    req.user
-        .removeFromCart(prodId)
+    const userId = req.session.userId;
+    User
+        .findById(userId)
+        .then(user => {
+            return user.removeFromCart(prodId);
+        })
         .then(() => {
             res.redirect('/cart');
         })
@@ -111,9 +154,10 @@ exports.removeFromCart = (req, res, next) => {
 //fetches all orders that match userid, populates them with product data and passes it to orders page
 exports.getOrders = (req, res, next) => {
     console.log('handling get orders request');
+    const userId = req.session.userId;
     Order
         .find({
-            userId: req.user._id,
+            userId: userId,
         })
         .select('items')
         .populate('items.productId', 'title')
@@ -122,7 +166,8 @@ exports.getOrders = (req, res, next) => {
             res.render('./shop/orders', {
                 pageTitle: "Orders",
                 path: "/orders",
-                orders: orders
+                orders: orders,
+                userId: userId
             });
         })
         .catch(err => console.log(err));    
@@ -130,8 +175,13 @@ exports.getOrders = (req, res, next) => {
 
 //adds all current cart products to a new order, clears cart and redirects to orders controller
 exports.postOrder = (req, res, next) => {
-    req.user
-        .addOrder()
+    console.log('handling post order request');
+    const userId = req.session.userId;
+    User
+        .findById(userId)
+        .then(user => {
+            return user.addOrder();
+        })
         .then(() => {
             res.redirect('/orders');
         })

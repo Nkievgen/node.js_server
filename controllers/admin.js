@@ -2,10 +2,13 @@
 
 const mongodb = require('mongodb');
 const Product = require('../models/product');
+const user = require('../models/user');
 
 //controller fetches all products in db and then renders product page
 exports.getProductList = (req, res, next) => {
     console.log('handling get admin product list request');
+    const userId = req.session.user._id;
+    const userName = req.session.user.name;
     Product
         .find()
         .then(products => {
@@ -13,7 +16,9 @@ exports.getProductList = (req, res, next) => {
             res.render('./admin/product-list',{
                 prods: products,
                 pageTitle: "Admin Product List",
-                path: "/admin/product-list"
+                path: "/admin/product-list",
+                userId: userId,
+                userName: userName
             });
         })
         .catch(
@@ -28,12 +33,13 @@ exports.postAddProduct = (req, res, next) => {
     const price = req.body.price;
     const imageUrl = req.body.imageUrl;
     const description = req.body.description;
+    const userId = req.session.user._id;
     const product = new Product({
         title: title,
         price: price,
         description: description,
         imageUrl: imageUrl,
-        userId: req.user
+        userId: userId
     });
     product
         .save()
@@ -50,10 +56,14 @@ exports.postAddProduct = (req, res, next) => {
 exports.getAddProduct = (req, res, next) => {
     console.log('handling get add product request');
     console.log('sending add product page', '\n');
+    const userId = req.session.user._id;
+    const userName = req.session.user.name;
     res.render('./admin/edit-product', {
         pageTitle: 'Add Product',
         path: '/admin/add-product',
-        editing: false
+        editing: false,
+        userId: userId,
+        userName: userName
     })
 }
 
@@ -65,6 +75,8 @@ exports.getEditProduct = (req, res, next) => {
         return res.redirect('/');
     }
     const prodId = req.params.productId;
+    const userId = req.session.user._id;
+    const userName = req.session.user.name;
     Product
         .findById(prodId)
         .then((product) => {
@@ -75,7 +87,9 @@ exports.getEditProduct = (req, res, next) => {
                 pageTitle: 'Edit Product',
                 path: '/admin/edit-product',
                 editing: editMode,
-                product: product
+                product: product,
+                userId: userId,
+                userName: userName
             })
         })
         .catch(err => 

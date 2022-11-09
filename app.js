@@ -33,16 +33,6 @@ app.use(
     })
 );
 
-app.use((req, res, next) => {
-    User
-        .findById('632048f1be3b57610c55b19b')
-        .then(user => {
-            req.user = user;
-            next();
-        })
-        .catch(err => console.log(err));
-});
-
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
@@ -55,22 +45,16 @@ mongoose
 )
 .then(() => {
     console.log('mongodb connection successfull');
-    User
-        //authentication flow is not yet implemented so there is only one user in the database
-        .findOne()
-        .then(user => {
-            if (!user) {
-                const newUser = new User({
-                    name: 'User',
-                    email: 'user@test.com',
-                    cart: {
-                        items: []
-                    }
-                })
-                newUser.save();
-            }
-        })    
+    // const newUser = new User({
+    //     name: 'User2',
+    //     email: 'user2@test.com',
+    //     cart: {
+    //         items: []
+    //     }
+    // })
+    // newUser.save();
     app.listen(3000);
+    console.log('listening...');
 })
 .catch(err => {
     console.log(err);
