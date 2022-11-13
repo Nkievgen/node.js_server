@@ -7,8 +7,14 @@ const user = require('../models/user');
 //controller fetches all products in db and then renders product page
 exports.getProductList = (req, res, next) => {
     console.log('handling get admin product list request');
-    const userId = req.session.user._id;
-    const userName = req.session.user.name;
+    let userId;
+    let userName;
+    if (req.session.user) {
+        userId = req.session.user._id;
+        userName = req.session.user.name;
+    } else {
+        res.redirect('/login');
+    }
     Product
         .find()
         .then(products => {
@@ -29,11 +35,16 @@ exports.getProductList = (req, res, next) => {
 //controller reads a post request and adds a new product to db, redirects to add product controller
 exports.postAddProduct = (req, res, next) => {
     console.log('handling post add product request');
+    let userId;
+    if (req.session.user) {
+        userId = req.session.user._id;
+    } else {
+        res.redirect('/login');
+    }
     const title = req.body.title;
     const price = req.body.price;
     const imageUrl = req.body.imageUrl;
     const description = req.body.description;
-    const userId = req.session.user._id;
     const product = new Product({
         title: title,
         price: price,
@@ -56,8 +67,14 @@ exports.postAddProduct = (req, res, next) => {
 exports.getAddProduct = (req, res, next) => {
     console.log('handling get add product request');
     console.log('sending add product page', '\n');
-    const userId = req.session.user._id;
-    const userName = req.session.user.name;
+    let userId;
+    let userName;
+    if (req.session.user) {
+        userId = req.session.user._id;
+        userName = req.session.user.name;
+    } else {
+        res.redirect('/login');
+    }
     res.render('./admin/edit-product', {
         pageTitle: 'Add Product',
         path: '/admin/add-product',
@@ -75,8 +92,14 @@ exports.getEditProduct = (req, res, next) => {
         return res.redirect('/');
     }
     const prodId = req.params.productId;
-    const userId = req.session.user._id;
-    const userName = req.session.user.name;
+    let userId;
+    let userName;
+    if (req.session.user) {
+        userId = req.session.user._id;
+        userName = req.session.user.name;
+    } else {
+        res.redirect('/login');
+    }
     Product
         .findById(prodId)
         .then((product) => {
@@ -100,6 +123,9 @@ exports.getEditProduct = (req, res, next) => {
 //controller reads a request and  updates a product in db, redirects to product list controller
 exports.postEditProduct = (req, res, next) => {
     console.log('handling post edit product request');
+    if (!req.session.user) {
+        res.redirect('/login');
+    }
     const productId = req.body.productId;
     const updatedTitle = req.body.title;
     const updatedPrice = req.body.price;
@@ -126,6 +152,9 @@ exports.postEditProduct = (req, res, next) => {
 //controlelr deletes a product from a db and redirects to product list controller
 exports.postDeleteProduct = (req, res, next) => {
     console.log('handling post delete product request');
+    if (!req.session.user) {
+        res.redirect('/login');
+    }
     const productId = req.body.productId;
     Product
         .findByIdAndRemove(productId)

@@ -99,8 +99,7 @@ exports.getCart = (req, res, next) => {
         userId = req.session.user._id;
         userName = req.session.user.name;
     } else {
-        userId = false;
-        userName = false;
+        res.redirect('/login');
     }
     User
         .findById(userId)
@@ -127,8 +126,7 @@ exports.postCart = (req, res, next) => {
         userId = req.session.user._id;
         userName = req.session.user.name;
     } else {
-        userId = false;
-        userName = false;
+        res.redirect('/login');
     }
     const cartProductId = req.body.productId;
     let foundProduct;
@@ -156,8 +154,7 @@ exports.removeFromCart = (req, res, next) => {
         userId = req.session.user._id;
         userName = req.session.user.name;
     } else {
-        userId = false;
-        userName = false;
+        res.redirect('/login');
     }
     const prodId = req.body.productId;
     User
@@ -190,8 +187,7 @@ exports.getOrders = (req, res, next) => {
         userId = req.session.user._id;
         userName = req.session.user.name;
     } else {
-        userId = false;
-        userName = false;
+        res.redirect('/login');
     }
     Order
         .find({
