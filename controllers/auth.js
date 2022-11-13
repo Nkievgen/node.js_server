@@ -28,11 +28,21 @@ exports.postLogin = (req, res, next) => {
         .then(user => {
             req.session.user = user;
             console.log('login successful');
-            res.redirect('/');
+            req.session.save(() => {
+                res.redirect('/');
+            });
         })
         .catch(err=> {
             console.log(err);
             console.log('login failed');
             res.redirect('/');
         })
+}
+
+exports.postLogout =(req, res, next) => {
+    console.log('handling post logout');
+    req.session.destroy(err => {
+        console.log(err);
+        res.redirect('/');
+    });
 }
