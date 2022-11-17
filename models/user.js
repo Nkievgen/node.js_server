@@ -5,11 +5,15 @@ const Order = require('./order');
 const Schema = mongoose.Schema;
 
 const userSchema = new Schema({
+    email: {
+        type: String,
+        required: true
+    },
     name: {
         type: String,
         required: true
     },
-    email: {
+    password: {
         type: String,
         required: true
     },
@@ -21,7 +25,7 @@ const userSchema = new Schema({
     }
 });
 
-//method check for current products in cart and then either adds it to cart or increases quantity if tje product is already there
+//checking if there are any products in cart and then either adding it to cart or increasing quantity if the product is already there
 userSchema.methods.addToCart = function(product) {
     const cartProductIndex = this.cart.items.findIndex(cp => {
         return cp.productId.toString() === product._id.toString();
@@ -46,7 +50,7 @@ userSchema.methods.addToCart = function(product) {
     return this.save();
 }
 
-//method removes product from cart if its quantity = 1 or decrements the quanitiy if its more than 1
+//removing product from cart if its quantity === 1 or decrementing the quanitiy if its more than 1
 userSchema.methods.removeFromCart = function(productId) {
     const updatedCartItems = [...this.cart.items];
     const prodIndex = updatedCartItems.findIndex(
@@ -63,7 +67,7 @@ userSchema.methods.removeFromCart = function(productId) {
     return this.save();
 }
 
-//method adds all products in cart to orders and then clears cart
+//adding all products in current user cart to orders and then clearing cart
 userSchema.methods.addOrder = function() {
     const order = new Order({
         userId: this._id,

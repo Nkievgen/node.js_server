@@ -7,6 +7,7 @@
         <%- include('../includes/navigation.ejs') %>
 
             <main>
+                <%- include('../includes/message.ejs') %>
                 <% if (prods.length > 0) { %>
                     <uv>
                         <% prods.forEach (prod => { %>
@@ -14,6 +15,7 @@
                         <span class="cart-list"><%= prod.productId.title %> (<%= prod.quantity %>)   $<%= (prod.productId.price * prod.quantity) %></span>
                         <br>
                         <form action="/remove-from-cart" method="POST">
+                            <input type ="hidden" name="_csrf" value="<%= csrfToken %>">
                             <button class="btn" type="submit">Remove from cart</button>
                             <input type="hidden" name="productId" value="<%= prod.productId._id%>">
                             <input type="hidden" name="productPrice" value="<%= prod.productId.price%>">
@@ -28,6 +30,7 @@
                         Total cost: $<%= totalPrice %>
                     </h3>
                     <form action="/create-order" method="POST">
+                        <input type ="hidden" name="_csrf" value="<%= csrfToken %>">
                         <button type="submit" class="btn">Checkout</button>
                     </form>
                     <% } else { %>

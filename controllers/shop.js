@@ -2,76 +2,46 @@ const Product = require('../models/product');
 const Order = require('../models/order');
 const User = require('../models/user');
 
-//fetches products from db and renders index page, same as product list page
+
+//fetching products from the db and rendering index page
 exports.getIndex = (req, res, next) => {
-    console.log('handling get index request');
-    let userId;
-    let userName;
-    if (req.session.user) {
-        userId = req.session.user._id;
-        userName = req.session.user.name;
-    } else {
-        userId = false;
-        userName = false;
-    }
     Product
         .find()
         .then(products => {
-            console.log('sending index page', '\n');
             res.render('./shop/index', {
                 prods: products,
                 pageTitle: "Shop",
-                path: "/",
-                userId: userId,
-                userName: userName
+                path: "/"
             });
-        }).catch(err =>
-            console.log(err)
-        );
+        })
+        .catch(err => {
+            console.log(err);
+            req.flash('error', 'Unexpected error');
+            res.redirect('/');
+        });
 }
 
-//fetches products from db and renders product list page
+//fetching products from the db and rendering index page
 exports.getProductList = (req, res, next) => {
-    console.log('handling get product list request');
-    let userId;
-    let userName;
-    if (req.session.user) {
-        userId = req.session.user._id;
-        userName = req.session.user.name;
-    } else {
-        userId = false;
-        userName = false;
-    }
     Product
         .find()
         .then(products => {
-            console.log('sending product list page', '\n');
             res.render('./shop/product-list',{
                 prods: products,
                 pageTitle: "Product List",
-                path: "/product-list",
-                userId: userId,
-                userName: userName
+                path: "/product-list"
             });
         })
-        .catch(err =>
-            console.log(err)
-        );
+        .catch(err => {
+            console.log(err);
+            req.flash('error', 'Unexpected error');
+            res.redirect('/');
+        });
 }
 
-//fetches product data for a specific product and passes it to prod details page
+//fetching product data for a specific product and rendering product details page
 exports.getProductDetails = (req, res, next) => {
     const searchId = req.params.productId;
-    let userId;
-    let userName;
-    if (req.session.user) {
-        userId = req.session.user._id;
-        userName = req.session.user.name;
-    } else {
-        userId = false;
-        userName = false;
-    }
-    console.log('handling get product details request');
     Product
         .findById(searchId)
         .then(product => {
@@ -79,28 +49,19 @@ exports.getProductDetails = (req, res, next) => {
             res.render('./shop/product-details',{
                 product: product,
                 pageTitle: product.title,
-                path: "/product-list",
-                userId: userId,
-                userName: userName
+                path: "/product-list"
             });
         })
-        .catch(err =>
-            console.log(err)
-        );
+        .catch(err => {
+            console.log(err);
+            req.flash('error', 'Unexpected error');
+            res.redirect('/');
+        });
 }
 
-//fetches cart data from user model and renders cart controller
+//fetching cart data from the db and rendering cart page
 exports.getCart = (req, res, next) => {
-    console.log('handling get cart request');
-    //console.log('session user: ' + req.session.user);
-    let userId;
-    let userName;
-    if (req.session.user) {
-        userId = req.session.user._id;
-        userName = req.session.user.name;
-    } else {
-        res.redirect('/login');
-    }
+    const userId = req.session.user._id;
     User
         .findById(userId)
         .populate('cart.items.productId')
@@ -109,25 +70,19 @@ exports.getCart = (req, res, next) => {
             res.render('./shop/cart', {
                 pageTitle: "Cart",
                 path: "/cart",
-                prods: products,
-                userId: userId,
-                userName: userName
+                prods: products
             });
         })
-        .catch(err => console.log(err));
+        .catch(err => {
+            console.log(err);
+            req.flash('error', 'Unexpected error');
+            res.redirect('/');
+        });
 }
 
-//gets a prod id from request, fetches prod data and adds it to cart, redirects to cart controller
+//getting prod id from req, fetching and adding to cart prod data from the db, redirecting to cart
 exports.postCart = (req, res, next) => {
-    console.log('handling post cart request');
-    let userId;
-    let userName;
-    if (req.session.user) {
-        userId = req.session.user._id;
-        userName = req.session.user.name;
-    } else {
-        res.redirect('/login');
-    }
+    const userId = req.session.user._id;
     const cartProductId = req.body.productId;
     let foundProduct;
     Product
@@ -142,20 +97,16 @@ exports.postCart = (req, res, next) => {
         .then(() => {
             res.redirect('/cart');
         })
-        .catch(err => console.log(err));
+        .catch(err => {
+            console.log(err);
+            req.flash('error', 'Unexpected error');
+            res.redirect('/');
+        });
 }
 
-//gets an id from request, removes product form db and redirects to cart controlelr
+//geting prod id from req, removing product from db and redirecting to cart
 exports.removeFromCart = (req, res, next) => {
-    console.log('handling remove product from cart request');
-    let userId;
-    let userName;
-    if (req.session.user) {
-        userId = req.session.user._id;
-        userName = req.session.user.name;
-    } else {
-        res.redirect('/login');
-    }
+    const userId = req.session.user._id;
     const prodId = req.body.productId;
     User
         .findById(userId)
@@ -165,8 +116,11 @@ exports.removeFromCart = (req, res, next) => {
         .then(() => {
             res.redirect('/cart');
         })
-        .catch(err => console.log(err))
-
+        .catch(err => {
+            console.log(err);
+            req.flash('error', 'Unexpected error');
+            res.redirect('/');
+        });
 }
 
 // exports.getCheckout = (req, res, next) => {
@@ -178,17 +132,10 @@ exports.removeFromCart = (req, res, next) => {
 //     });
 // }
 
-//fetches all orders that match userid, populates them with product data and passes it to orders page
+//fetching all orders that match userid from the db, populating them with product data and rendering orders page
 exports.getOrders = (req, res, next) => {
-    console.log('handling get orders request');
-    let userId;
-    let userName;
-    if (req.session.user) {
-        userId = req.session.user._id;
-        userName = req.session.user.name;
-    } else {
-        res.redirect('/login');
-    }
+    const userId = req.session.user._id;
+    
     Order
         .find({
             userId: userId,
@@ -196,27 +143,22 @@ exports.getOrders = (req, res, next) => {
         .select('items')
         .populate('items.productId', 'title')
         .then(orders => {
-            console.log('sending orders page', '\n');
             res.render('./shop/orders', {
                 pageTitle: "Orders",
                 path: "/orders",
-                orders: orders,
-                userId: userId,
-                userName: userName
+                orders: orders
             });
         })
-        .catch(err => console.log(err));    
+        .catch(err => {
+            console.log(err);
+            req.flash('error', 'Unexpected error');
+            res.redirect('/');
+        }); 
 }
 
-//adds all current cart products to a new order, clears cart and redirects to orders controller
+//creating a new order from current user cart products and clearing current user cart, redirecting to orders
 exports.postOrder = (req, res, next) => {
-    console.log('handling post order request');
-    let userId;
-    if (req.session.user) {
-        userId = req.session.user._id;
-    } else {
-        res.redirect('/login');
-    }
+    const userId = req.session.user._id;
     User
         .findById(userId)
         .then(user => {
@@ -225,7 +167,11 @@ exports.postOrder = (req, res, next) => {
         .then(() => {
             res.redirect('/orders');
         })
-        .catch(err => console.log(err));
+        .catch(err => {
+            console.log(err);
+            req.flash('error', 'Unexpected error');
+            res.redirect('/');
+        });
 }
 
 

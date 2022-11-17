@@ -87,6 +87,22 @@ form {
   color: #ffeb3b;
 }
 
+.user-message {
+  margin: auto;
+  width: 90%;
+  border: 1px solid rgb(77, 160, 255);
+  border-radius: 3px;
+  padding: 0.5rem;
+  background: lightblue;
+  text-align: center;
+}
+
+.user-message--error {
+  border-color: red;
+  background: rgb(255, 210, 210);
+  color: red;
+}
+
 .mobile-nav {
   width: 30rem;
   height: 100vh;
@@ -223,6 +239,11 @@ form {
   color: white;
 }
 
+.user-message {
+  margin: auto;
+  width: 90%
+}
+
 @media (min-width: 768px) {
   .main-header__nav {
     display: flex;
@@ -230,5 +251,10 @@ form {
 
   #side-menu-toggle {
     display: none;
+  }
+
+  .user-message {
+    margin: auto;
+    width: 30rem
   }
 }
