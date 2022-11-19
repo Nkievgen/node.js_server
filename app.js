@@ -10,7 +10,7 @@ const csurf = require('csurf');
 const flash = require('connect-flash');
 
 //file with mongodb connection link
-const MONGODB_URI = require('./mongodburi');
+const MONGODB_URI = require('./keys/mongodb-uri');
 
 //routes importting
 const adminRoutes = require('./routes/admin');
