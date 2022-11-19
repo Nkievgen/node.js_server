@@ -45,7 +45,6 @@ exports.getProductDetails = (req, res, next) => {
     Product
         .findById(searchId)
         .then(product => {
-            console.log('sending product details page', '\n');
             res.render('./shop/product-details',{
                 product: product,
                 pageTitle: product.title,
@@ -124,8 +123,6 @@ exports.removeFromCart = (req, res, next) => {
 }
 
 // exports.getCheckout = (req, res, next) => {
-//     console.log('handling get checkout request');
-//     console.log('sending checkout page', '\n');
 //     res.render('./shop/checkout', {
 //         pageTitle: "Checkout",
 //         path: "/cart/checkout"
