@@ -1,6 +1,7 @@
 notes.txt
 .vscode
-mongodburi.js
+mongodb-uri.js
+sendgrid-key.js
 
 # Logs
 logs
