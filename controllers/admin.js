@@ -4,8 +4,11 @@ const user = require('../models/user');
 
 //fetching all products from the db and rendering product list page
 exports.getProductList = (req, res, next) => {
+    sessionUserId = req.session.user._id;
     Product
-        .find()
+        .find({
+            userId: sessionUserId
+        })
         .then(products => {
             res.render('./admin/product-list',{
                 prods: products,
@@ -66,7 +69,10 @@ exports.getEditProduct = (req, res, next) => {
         .findById(prodId)
         .then((product) => {
             if (!product){
-                return res.redirect('/admin/product-list');
+                throw new Error('PRODUCT_NOT_FOUND');
+            }
+            if (product.userId.toString() !== req.session.user._id.toString()) {
+                throw new Error('AUTH_CHECK_FAIL');
             }
             res.render('./admin/edit-product', {
                 pageTitle: 'Edit Product',
@@ -77,8 +83,17 @@ exports.getEditProduct = (req, res, next) => {
         })
         .catch(err => {
             console.log(err);
-            req.flash('error', 'Unexpected error');
-            res.redirect('/');
+            let viewErrMessage;
+            switch(err.message){
+                case 'AUTH_CHECK_FAIL':
+                    viewErrMessage = 'Authorization check failed';
+                    break;
+                default:
+                    viewErrMessage = 'Unexpected error';
+                    break;
+            }
+            req.flash('error', viewErrMessage);
+            res.redirect('/admin/product-list');
         });
 }
 
@@ -92,6 +107,9 @@ exports.postEditProduct = (req, res, next) => {
     Product
         .findById(productId)
         .then(product => {
+            if (product.userId.toString() !== req.session.user._id.toString()) {
+                throw new Error('AUTH_CHECK_FAIL');
+            }
             product.title = updatedTitle;
             product.price = updatedPrice;
             product.description = updatedDescription;
@@ -103,7 +121,16 @@ exports.postEditProduct = (req, res, next) => {
         })
         .catch(err => {
             console.log(err);
-            req.flash('error', 'Unexpected error');
+            let viewErrMessage;
+            switch(err.message){
+                case 'AUTH_CHECK_FAIL':
+                    viewErrMessage = 'Authorization check failed';
+                    break;
+                default:
+                    viewErrMessage = 'Unexpected error';
+                    break;
+            }
+            req.flash('error', viewErrMessage);
             res.redirect('/');
         });
 }
@@ -112,13 +139,28 @@ exports.postEditProduct = (req, res, next) => {
 exports.postDeleteProduct = (req, res, next) => {
     const productId = req.body.productId;
     Product
-        .findByIdAndRemove(productId)
-        .then(() => {
+        .deleteOne({
+            _id: productId,
+            userId: req.session.user._id
+        })
+        .then(result => {
+            if (result.deletedCount == 0) {
+                throw new Error('WRONG_AUTH_OR_ID');
+            }
             res.redirect('/admin/product-list');
         })
         .catch(err => {
             console.log(err);
-            req.flash('error', 'Unexpected error');
-            res.redirect('/');
+            let viewErrMessage;
+            switch(err.message){
+                case 'WRONG_AUTH_OR_ID':
+                    viewErrMessage = 'Authorization check failed';
+                    break;
+                default:
+                    viewErrMessage = 'Unexpected error';
+                    break;
+            }
+            req.flash('error', viewErrMessage);
+            res.redirect('/admin/product-list');
         });
 }
