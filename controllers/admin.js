@@ -1,6 +1,68 @@
 const mongodb = require('mongodb');
 const Product = require('../models/product');
 const user = require('../models/user');
+const { validationResult } = require('express-validator');
+const messagesToLocals = require('../util/messages-to-locals');
+
+const emptyProduct = {
+    savedTitle: '',
+    savedPrice: '',
+    savedImageUrl: '',
+    savedDescription: ''
+}
+
+const renderEditProduct = function(req, res, next, prodId, savedInput = emptyProduct, validationErrors = []) {
+    Product
+        .findById(prodId)
+        .then((product) => {
+            if (!product){
+                throw new Error('PRODUCT_NOT_FOUND');
+            }
+            if (product.userId.toString() !== req.session.user._id.toString()) {
+                throw new Error('AUTH_CHECK_FAIL');
+            }
+            if (savedInput === emptyProduct) {
+                savedInput = {
+                    title: product.title,
+                    price: product.price,
+                    imageUrl: product.imageUrl,
+                    description: product.description
+                }
+            }
+            res.render('./admin/edit-product', {
+                pageTitle: 'Edit Product',
+                path: '/admin/edit-product',
+                editing: true,
+                productId: product._id,
+                savedInput: savedInput,
+                validationErrors: validationErrors
+            })
+        })
+        .catch(err => {
+            console.log(err);
+            let viewErrMessage;
+            switch(err.message){
+                case 'AUTH_CHECK_FAIL':
+                    viewErrMessage = 'Authorization check failed';
+                    break;
+                default:
+                    viewErrMessage = 'Unexpected error';
+                    break;
+            }
+            req.flash('error', viewErrMessage);
+            res.redirect('/admin/product-list');
+        });
+}
+
+const renderAddProduct = function(req, res, next, savedInput = emptyProduct, validationErrors = []) {
+    res.render('./admin/edit-product', {
+        pageTitle: 'Add Product',
+        path: '/admin/add-product',
+        editing: false,
+        savedInput: savedInput,
+        validationErrors: validationErrors
+    })
+}
 
 //fetching all products from the db and rendering product list page
 exports.getProductList = (req, res, next) => {
@@ -23,6 +85,11 @@ exports.getProductList = (req, res, next) => {
         });
 }
 
+//rendering add product page
+exports.getAddProduct = (req, res, next) => {
+    renderAddProduct(req, res, next);
+}
+
 //adding a new product to the db, redirecting to add product
 exports.postAddProduct = (req, res, next) => {
     const userId = req.session.user._id;
@@ -30,6 +97,17 @@ exports.postAddProduct = (req, res, next) => {
     const price = req.body.price;
     const imageUrl = req.body.imageUrl;
     const description = req.body.description;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        messagesToLocals(errors.array(), res);
+        const savedInput = {
+            title: title,
+            price: price,
+            imageUrl: imageUrl,
+            description: description
+        };
+        return renderAddProduct(req, res, next, savedInput, errors.array());
+    }
     const product = new Product({
         title: title,
         price: price,
@@ -49,52 +127,16 @@ exports.postAddProduct = (req, res, next) => {
         });
 }
 
-//rendering add product page
-exports.getAddProduct = (req, res, next) => {
-    res.render('./admin/edit-product', {
-        pageTitle: 'Add Product',
-        path: '/admin/add-product',
-        editing: false
-    })
-}
+
 
 //fetching product data and then rendering edit page with pre-populated input fields
 exports.getEditProduct = (req, res, next) => {
     const editMode = req.query.edit;
     if (!editMode) {
-        return res.redirect('/');
+        return res.redirect('/admin/product-list');
     }
     const prodId = req.params.productId;
-    Product
-        .findById(prodId)
-        .then((product) => {
-            if (!product){
-                throw new Error('PRODUCT_NOT_FOUND');
-            }
-            if (product.userId.toString() !== req.session.user._id.toString()) {
-                throw new Error('AUTH_CHECK_FAIL');
-            }
-            res.render('./admin/edit-product', {
-                pageTitle: 'Edit Product',
-                path: '/admin/edit-product',
-                editing: editMode,
-                product: product
-            })
-        })
-        .catch(err => {
-            console.log(err);
-            let viewErrMessage;
-            switch(err.message){
-                case 'AUTH_CHECK_FAIL':
-                    viewErrMessage = 'Authorization check failed';
-                    break;
-                default:
-                    viewErrMessage = 'Unexpected error';
-                    break;
-            }
-            req.flash('error', viewErrMessage);
-            res.redirect('/admin/product-list');
-        });
+    renderEditProduct(req, res, next, prodId);
 }
 
 //updating a product in the db, redirecting to product list
@@ -104,6 +146,17 @@ exports.postEditProduct = (req, res, next) => {
     const updatedPrice = req.body.price;
     const updatedImageUrl = req.body.imageUrl;
     const updatedDescription = req.body.description;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        messagesToLocals(errors.array(), res);
+        const savedInput = {
+            title: updatedTitle,
+            price: updatedPrice,
+            imageUrl: updatedImageUrl,
+            description: updatedDescription
+        }
+        return renderEditProduct(req, res, next, productId, savedInput, errors.array());
+    }
     Product
         .findById(productId)
         .then(product => {

@@ -3,8 +3,10 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const sendgridTransport = require('nodemailer-sendgrid-transport');
+const { validationResult } = require('express-validator');
 
 const User = require('../models/user');
+const messagesToLocals = require('../util/messages-to-locals');
 const SENDGRID_API_KEY = require('../keys/sendgrid-key');
 
 const transporter = nodemailer.createTransport(sendgridTransport({
@@ -13,18 +15,38 @@ const transporter = nodemailer.createTransport(sendgridTransport({
     }
 }));
 
-//rendering login page
-exports.getLogin = (req, res, next) => {
+const renderSignup = function(req, res, next, savedEmail = '', validationErrors = []) {
+    res.render('./auth/signup', {
+        pageTitle: "Signup",
+        path: "/signup",
+        savedEmail: savedEmail,
+        validationErrors: validationErrors
+    });
+}
+
+const renderLogin = function(req, res, next, savedEmail = '', validationErrors = []) {
     res.render('./auth/login', {
         pageTitle: "Login",
-        path: "/login"
+        path: "/login",
+        savedEmail: savedEmail,
+        validationErrors: validationErrors
     })
+}
+
+//rendering login page
+exports.getLogin = (req, res, next) => {
+    renderLogin(req, res, next);
 };
 
 //fetching user from the db, comparing password hash and storing userdata in the session
 exports.postLogin = (req, res, next) => {
     const email = req.body.email;
     const password = req.body.password;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        messagesToLocals(errors.array(), res);
+        return renderLogin(req, res, next, email, errors.array());
+    }
     let userData;
     User
         .findOne({
@@ -66,29 +88,31 @@ exports.postLogin = (req, res, next) => {
 
 //rendering signup page
 exports.getSignup = (req, res, next) => {
-    res.render('./auth/signup', {
-        pageTitle: "Signup",
-        path: "/signup"
-    });
+    renderSignup(req, res, next);
 }
 
 //looking for the email in the db and creating new user if email is not found, redirecting to index
 exports.postSignup = (req, res, next) => {
     const email = req.body.email;
     const password = req.body.password;
-    const name = req.body.name;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        messagesToLocals(errors.array(), res);
+        return renderSignup(req, res, next, email, errors.array());
+    }
     User
-        .findOne({email: email})
-        .then(userData => {
-            if(userData){
-                throw new Error('EMAIL_EXISTS');
+        .find({
+            email: email
+        })
+        .then(user => {
+            if(user) {
+                throw new Error('USER_ALREADY_EXISTS');
             }
             const salt = 12;
             return bcrypt.hash(password, salt);
         })
         .then(hashedPassword => {
             const user = new User({
-                name: name,
                 email: email,
                 password: hashedPassword,
                 cart: { items: [] }
@@ -111,9 +135,10 @@ exports.postSignup = (req, res, next) => {
         })
         .catch(err => {
             console.log(err);
-            if (err.message === 'EMAIL_EXISTS') {
-                req.flash('error', 'Email address already taken');
-                res.redirect ('/signup');
+            if(err.message === 'USER_ALREADY_EXISTS') {
+                res.locals.errorMessages.push('Email already taken');
+                const wrongEmail = [{param: 'email'}]
+                renderSignup(req, res, next, email, wrongEmail);
             } else {
                 req.flash('error', 'Unexpected error');
                 res.redirect('/');
