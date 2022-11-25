@@ -12,8 +12,8 @@ router.get('/add-product',
 );
 
 router.post('/add-product',
-    productValidation,
     isAuth,
+    productValidation,
     adminController.postAddProduct
 );
 
@@ -28,8 +28,8 @@ router.get('/edit-product/:productId',
 );
 
 router.post('/edit-product',
-    productValidation,
     isAuth,
+    productValidation,
     adminController.postEditProduct
 );
 
