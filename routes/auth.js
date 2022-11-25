@@ -6,7 +6,7 @@ const isAuth = require('../middleware/is-auth');
 
 const User = require('../models/user');
 const authController = require('../controllers/auth');
-const authValidation = require('../util/auth-validation');
+const authValidation = require('../validation/auth');
 
 router.get('/login',
     authController.getLogin

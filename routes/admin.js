@@ -4,7 +4,7 @@ const { body } = require('express-validator');
 
 const adminController = require('../controllers/admin');
 const isAuth = require('../middleware/is-auth');
-const productValidation = require('../util/product-validation');
+const productValidation = require('../validation/product');
 
 router.get('/add-product',
     isAuth,
