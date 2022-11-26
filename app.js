@@ -48,7 +48,7 @@ app.use(
 
 app.use(flash());
 app.use(csrfProtection);
-app.use(setLocals); //setting userId, userName and messages in locals
+app.use(setLocals); //setting userId, userEmail, messages and csrf token in locals
 
 //routes
 app.use('/admin', adminRoutes);
