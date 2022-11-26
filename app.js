@@ -14,6 +14,7 @@ const MONGODB_URI = require('./keys/mongodb-uri');
 
 //middleware
 const setLocals = require('./middleware/set-locals');
+const errorHandler = require('./middleware/error-handler');
 
 //routes importting
 const adminRoutes = require('./routes/admin');
@@ -54,6 +55,7 @@ app.use('/admin', adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
 app.use(errorRoutes);
+app.use(errorHandler);
 
 //connecting to the database and starting to listen if successfull
 mongoose

@@ -1,6 +1,7 @@
 const Product = require('../models/product');
 const Order = require('../models/order');
 const User = require('../models/user');
+const passToErrHandler = require('../util/pass-to-err-handler');
 
 //fetching products from the db and rendering index page
 exports.getIndex = (req, res, next) => {
@@ -14,9 +15,7 @@ exports.getIndex = (req, res, next) => {
             });
         })
         .catch(err => {
-            console.log(err);
-            req.flash('error', 'Unexpected error');
-            res.redirect('/');
+            passToErrHandler(err, req, res, next);  
         });
 }
 
@@ -32,9 +31,7 @@ exports.getProductList = (req, res, next) => {
             });
         })
         .catch(err => {
-            console.log(err);
-            req.flash('error', 'Unexpected error');
-            res.redirect('/');
+            passToErrHandler(err, req, res, next);  
         });
 }
 
@@ -51,9 +48,7 @@ exports.getProductDetails = (req, res, next) => {
             });
         })
         .catch(err => {
-            console.log(err);
-            req.flash('error', 'Unexpected error');
-            res.redirect('/');
+            passToErrHandler(err, req, res, next);          
         });
 }
 
@@ -72,9 +67,7 @@ exports.getCart = (req, res, next) => {
             });
         })
         .catch(err => {
-            console.log(err);
-            req.flash('error', 'Unexpected error');
-            res.redirect('/');
+            passToErrHandler(err, req, res, next);
         });
 }
 
@@ -96,9 +89,7 @@ exports.postCart = (req, res, next) => {
             res.redirect('/cart');
         })
         .catch(err => {
-            console.log(err);
-            req.flash('error', 'Unexpected error');
-            res.redirect('/');
+            passToErrHandler(err, req, res, next);  
         });
 }
 
@@ -115,9 +106,7 @@ exports.removeFromCart = (req, res, next) => {
             res.redirect('/cart');
         })
         .catch(err => {
-            console.log(err);
-            req.flash('error', 'Unexpected error');
-            res.redirect('/');
+            passToErrHandler(err, req, res, next);
         });
 }
 
@@ -146,9 +135,7 @@ exports.getOrders = (req, res, next) => {
             });
         })
         .catch(err => {
-            console.log(err);
-            req.flash('error', 'Unexpected error');
-            res.redirect('/');
+            passToErrHandler(err, req, res, next);
         }); 
 }
 
@@ -164,9 +151,7 @@ exports.postOrder = (req, res, next) => {
             res.redirect('/orders');
         })
         .catch(err => {
-            console.log(err);
-            req.flash('error', 'Unexpected error');
-            res.redirect('/');
+            passToErrHandler(err, req, res, next);
         });
 }
 

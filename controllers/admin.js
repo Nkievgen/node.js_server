@@ -1,6 +1,7 @@
 const Product = require('../models/product');
 const { validationResult } = require('express-validator');
 const messagesToLocals = require('../util/messages-to-locals');
+const passToErrHandler = require('../util/pass-to-err-handler');
 
 const emptyProduct = {
     savedTitle: '',
@@ -10,6 +11,9 @@ const emptyProduct = {
 }
 
 const renderEditProduct = function(req, res, next, prodId, savedInput = emptyProduct, validationErrors = []) {
+    if (validationErrors.length > 0) {
+        res.status(422);
+    }
     Product
         .findById(prodId)
         .then((product) => {
@@ -37,14 +41,13 @@ const renderEditProduct = function(req, res, next, prodId, savedInput = emptyPro
             })
         })
         .catch(err => {
-            console.log(err);
             let viewErrMessage;
             switch(err.message){
                 case 'AUTH_CHECK_FAIL':
                     viewErrMessage = 'Authorization check failed';
                     break;
                 default:
-                    viewErrMessage = 'Unexpected error';
+                    passToErrHandler(err, req, res, next);
                     break;
             }
             req.flash('error', viewErrMessage);
@@ -53,6 +56,9 @@ const renderEditProduct = function(req, res, next, prodId, savedInput = emptyPro
 }
 
 const renderAddProduct = function(req, res, next, savedInput = emptyProduct, validationErrors = []) {
+    if (validationErrors.length > 0) {
+        res.status(422);
+    }
     res.render('./admin/edit-product', {
         pageTitle: 'Add Product',
         path: '/admin/add-product',
@@ -77,9 +83,7 @@ exports.getProductList = (req, res, next) => {
             });
         })
         .catch(err => {
-            console.log(err);
-            req.flash('error', 'Unexpected error');
-            res.redirect('/');
+            passToErrHandler(err, req, res, next);
         });
 }
 
@@ -119,9 +123,7 @@ exports.postAddProduct = (req, res, next) => {
             res.redirect('/admin/add-product');
         })
         .catch(err => {
-            console.log(err);
-            req.flash('error', 'Unexpected error');
-            res.redirect('/');
+            passToErrHandler(err, req, res, next);
         });
 }
 
@@ -169,14 +171,13 @@ exports.postEditProduct = (req, res, next) => {
             res.redirect('/admin/product-list');
         })
         .catch(err => {
-            console.log(err);
             let viewErrMessage;
             switch(err.message){
                 case 'AUTH_CHECK_FAIL':
                     viewErrMessage = 'Authorization check failed';
                     break;
                 default:
-                    viewErrMessage = 'Unexpected error';
+                    passToErrHandler(err, req, res, next);
                     break;
             }
             req.flash('error', viewErrMessage);
@@ -206,7 +207,7 @@ exports.postDeleteProduct = (req, res, next) => {
                     viewErrMessage = 'Authorization check failed';
                     break;
                 default:
-                    viewErrMessage = 'Unexpected error';
+                    passToErrHandler(err, req, res, next);
                     break;
             }
             req.flash('error', viewErrMessage);

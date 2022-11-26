@@ -6,6 +6,7 @@ const { validationResult } = require('express-validator');
 const User = require('../models/user');
 const messagesToLocals = require('../util/messages-to-locals');
 const SENDGRID_API_KEY = require('../keys/sendgrid-key');
+const passToErrHandler = require('../util/pass-to-err-handler');
 
 const transporter = nodemailer.createTransport(sendgridTransport({
     auth: {
@@ -14,6 +15,9 @@ const transporter = nodemailer.createTransport(sendgridTransport({
 }));
 
 const renderSignup = function(req, res, next, savedEmail = '', validationErrors = []) {
+    if (validationErrors.length > 0) {
+        res.status(422);
+    }
     res.render('./auth/signup', {
         pageTitle: "Signup",
         path: "/signup",
@@ -23,6 +27,9 @@ const renderSignup = function(req, res, next, savedEmail = '', validationErrors 
 }
 
 const renderLogin = function(req, res, next, savedEmail = '', validationErrors = []) {
+    if (validationErrors.length > 0) {
+        res.status(422);
+    }
     res.render('./auth/login', {
         pageTitle: "Login",
         path: "/login",
@@ -68,7 +75,6 @@ exports.postLogin = (req, res, next) => {
             }
         })
         .catch(err=> {
-            console.log(err);
             switch (err.message) {
                 case 'EMAIL_NOT_FOUND':
                     req.flash('error', 'Invalid email or password');
@@ -77,7 +83,7 @@ exports.postLogin = (req, res, next) => {
                     req.flash('error', 'Invalid email or password');
                     break;
                 default:
-                    req.flash('error', 'Unexpected error');
+                    passToErrHandler(err, req, res, next);
                     break;
             }
             res.redirect('/login');
@@ -132,14 +138,12 @@ exports.postSignup = (req, res, next) => {
             res.redirect('/login');
         })
         .catch(err => {
-            console.log(err);
             if(err.message === 'USER_ALREADY_EXISTS') {
                 res.locals.errorMessages.push('Email already taken');
                 const wrongEmail = [{param: 'email'}]
                 renderSignup(req, res, next, email, wrongEmail);
             } else {
-                req.flash('error', 'Unexpected error');
-                res.redirect('/');
+                passToErrHandler(err, req, res, next);
             }
         });
 }
@@ -147,7 +151,9 @@ exports.postSignup = (req, res, next) => {
 //erasing session data and redirecting to index
 exports.postLogout =(req, res, next) => {
     req.session.destroy(err => {
-        console.log(err);
+        if (err) {
+            passToErrHandler(err, req, res, next);
+        }
         res.redirect('/');
     });
 }
@@ -163,8 +169,7 @@ exports.getReset = (req, res, next) => {
 exports.postReset = (req, res, next) => {
     crypto.randomBytes(32, (err, buffer) => {
         if (err) {
-            console.log(err);
-            return res.redirect('/reset');
+            passToErrHandler(err, req, res, next);
         }
         const token = buffer.toString('hex');
         const userEmail = req.body.email;
@@ -193,13 +198,12 @@ exports.postReset = (req, res, next) => {
                 res.redirect('/login');  
             })
             .catch(err => {
-                console.log(err);
                 switch(err.message) {
                     case 'USER_NOT_FOUND':
                         req.flash('error', 'No account found with that email address');
                         break;
                     default:
-                        req.flash('error', 'Unexpected error happened');
+                        passToErrHandler(err, req, res, next);
                         break;
                 }
                 res.redirect('/password-reset');
@@ -227,8 +231,14 @@ exports.getSetPassword = (req, res, next) => {
             });
         })
         .catch(err => {
-            console.log(err);
-            req.flash('error', 'Invalid or overdue password reset link');
+            switch(err.message) {
+                case 'USER_NOT_FOUND':
+                    req.flash('error', 'Invalid or overdue password reset link');
+                    break;
+                default:
+                    passToErrHandler(err, req, res, next);
+                    break;
+            }
             res.redirect('/login');
         });
 }
@@ -262,8 +272,14 @@ exports.postSetPassword = (req, res, next) => {
             res.redirect('/login');
         })
         .catch(err => {
-            console.log(err)
-            req.flash('error', 'Invalid or overdue password reset link');
+            switch(err.message) {
+                case 'USER_NOT_FOUND':
+                    req.flash('error', 'Invalid or overdue password reset link');
+                    break;
+                default:
+                    passToErrHandler(err, req, res, next);
+                    break;
+            }
             res.redirect('/login');
         });
 }
