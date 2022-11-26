@@ -1,14 +1,15 @@
 const { body } = require('express-validator');
 
 module.exports = [
-    body('title')
+body('title')
     .notEmpty()
     .withMessage('Title is a required field')
     .if(
         body('title').notEmpty()
     )
     .isString()
-    .withMessage('Title should be a string'),
+    .withMessage('Title should consist only of characters and numbers')
+    .trim(),
 body('imageUrl')
     .trim()
     .if(
@@ -22,9 +23,8 @@ body('price')
     .if(
         body('price').notEmpty()
     )
-    .isNumeric()
-    .withMessage('Price should be numeric'),
+    .isFloat()
+    .withMessage('Price should be a number'),
 body('description')
-    .isString()
-    .withMessage('Description should be a string'),
+    .trim(),
 ]
