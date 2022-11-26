@@ -12,6 +12,9 @@ const flash = require('connect-flash');
 //file with mongodb connection link
 const MONGODB_URI = require('./keys/mongodb-uri');
 
+//middleware
+const setLocals = require('./middleware/set-locals');
+
 //routes importting
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
@@ -29,9 +32,7 @@ const store = new mongoDbStore({
 const csrfProtection = csurf();
 
 app.set('view engine', 'ejs');
-
 app.use(bodyParser.urlencoded({extended: false}));
-
 app.use(express.static(path.join(__dirname, 'public')));
 
 //session initialization
@@ -45,33 +46,8 @@ app.use(
 );
 
 app.use(flash());
-
 app.use(csrfProtection);
-
-//setting userId, userName and messages in locals
-app.use((req, res, next) => {
-    res.locals.csrfToken = req.csrfToken();
-    if (req.session.user) {
-        res.locals.userId = req.session.user._id;
-        res.locals.userEmail = req.session.user.email;
-    } else {
-        res.locals.userId = false;
-        res.locals.userEmail = false;
-    }
-    let messages = req.flash('message');
-    let errorMessages = req.flash('error');
-    if (messages.length > 0) {
-        res.locals.messages = messages;
-    } else {
-        res.locals.messages = [];
-    }
-    if (errorMessages.length > 0) {
-        res.locals.errorMessages = errorMessages;
-    } else {
-        res.locals.errorMessages = [];
-    }
-    next();
-})
+app.use(setLocals); //setting userId, userName and messages in locals
 
 //routes
 app.use('/admin', adminRoutes);
