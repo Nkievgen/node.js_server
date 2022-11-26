@@ -9,7 +9,7 @@ const mongoDbStore = require('connect-mongodb-session')(session);
 const csurf = require('csurf');
 const flash = require('connect-flash');
 
-//file with mongodb connection link
+//mongodb api key
 const MONGODB_URI = require('./keys/mongodb-uri');
 
 //middleware

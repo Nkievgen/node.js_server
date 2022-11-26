@@ -1,6 +1,4 @@
-const mongodb = require('mongodb');
 const Product = require('../models/product');
-const user = require('../models/user');
 const { validationResult } = require('express-validator');
 const messagesToLocals = require('../util/messages-to-locals');
 
@@ -126,8 +124,6 @@ exports.postAddProduct = (req, res, next) => {
             res.redirect('/');
         });
 }
-
-
 
 //fetching product data and then rendering edit page with pre-populated input fields
 exports.getEditProduct = (req, res, next) => {

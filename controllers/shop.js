@@ -2,7 +2,6 @@ const Product = require('../models/product');
 const Order = require('../models/order');
 const User = require('../models/user');
 
-
 //fetching products from the db and rendering index page
 exports.getIndex = (req, res, next) => {
     Product
