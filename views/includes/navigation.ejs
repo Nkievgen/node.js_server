@@ -29,7 +29,7 @@
         <% if(userId) { %>
             <ul class="main-header__item-list">
                 <li class="main-header__item">
-                    <p class="active">Logged in as <%= userName %></a>
+                    <p class="active">Logged in as <%= userEmail %></a>
                 </li>
                 <li class="main-header__item">
                     <form action="/logout" method="post">
@@ -75,7 +75,7 @@
                 <% } %>
                 <% if (userId) { %>
                 <li class="mobile-nav__item">
-                    <p class="active">Logged in as <%= userName %></a>
+                    <p class="active">Logged in as <%= userEmail %></a>
                 </li>
                 <li class="mobile-nav__item">
                     <form action="/logout" method="post">

@@ -53,22 +53,22 @@ app.use((req, res, next) => {
     res.locals.csrfToken = req.csrfToken();
     if (req.session.user) {
         res.locals.userId = req.session.user._id;
-        res.locals.userName = req.session.user.name;
+        res.locals.userEmail = req.session.user.email;
     } else {
         res.locals.userId = false;
-        res.locals.userName = false;
+        res.locals.userEmail = false;
     }
-    let message = req.flash('message');
-    let errorMessage = req.flash('error');
-    if (message.length > 0) {
-        res.locals.message = message[0];
+    let messages = req.flash('message');
+    let errorMessages = req.flash('error');
+    if (messages.length > 0) {
+        res.locals.messages = messages;
     } else {
-        res.locals.message = false;
+        res.locals.messages = [];
     }
-    if (errorMessage.length > 0) {
-        res.locals.errorMessage = errorMessage[0];
+    if (errorMessages.length > 0) {
+        res.locals.errorMessages = errorMessages;
     } else {
-        res.locals.errorMessage = false;
+        res.locals.errorMessages = [];
     }
     next();
 })

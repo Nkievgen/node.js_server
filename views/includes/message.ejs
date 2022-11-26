@@ -1,6 +1,9 @@
-<% if (errorMessage) { %>
-<div class="user-message user-message--error"> <%= errorMessage %></div>
-<% } %>
-<% if (message) { %>
-<div class="user-message"> <%= message %></div>
-<% } %>
+<% if (errorMessages.length > 0) { %>
+<% errorMessages.forEach(errorMessage => { %>
+<div class="user-message user-message--error"><%= errorMessage %></div>
+<% });} %>
+
+<% if (messages.length > 0) { %>
+    <% messages.forEach(message => { %>
+<div class="user-message"><%= message %></div>
+<% });} %>
