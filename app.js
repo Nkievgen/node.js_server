@@ -9,6 +9,7 @@ const mongoDbStore = require('connect-mongodb-session')(session);
 const csurf = require('csurf');
 const flash = require('connect-flash');
 const multer = require('multer');
+const file = require('./util/file');
 
 //mongodb api key
 const MONGODB_URI = require('./keys/mongodb-uri');
@@ -33,45 +34,8 @@ const store = new mongoDbStore({
 
 const csrfProtection = csurf();
 
-const fileStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'images');
-    },
-    filename: (req, file, cb) => {
-        let fileExtension;
-        switch(file.mimetype) {
-            case 'image/png':
-                fileExtension = '.png';
-                break;
-            case 'image/jpeg':
-                fileExtension = '.jpeg';
-                break;
-        }
-        let fileName = new Date().toISOString();
-        target = new RegExp(/\.|:|-/, 'g'); //removes '.' OR '-' OR ':'
-        fileName = fileName.replace(target, '') + fileExtension;
-        cb(null, fileName);
-    }
-});
-
-const fileFilter = (req, file, cb) => {
-    let doSave = false;
-    switch(file.mimetype) {
-        case 'image/png':
-            doSave = true;
-            break;
-        case 'image/jpeg':
-            doSave = true;
-            break;
-    }
-    cb(null, doSave);
-}
-
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: false}));
-app.use(multer({storage: fileStorage, fileFilter: fileFilter}).single('image'));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/images', express.static(path.join(__dirname, 'images')));
 
 //session initialization
 app.use(
@@ -82,10 +46,13 @@ app.use(
         store: store
     })
 );
-
 app.use(flash());
 app.use(csrfProtection);
 app.use(setLocals); //setting userId, userEmail, messages and csrf token in locals
+
+app.use(multer({storage: file.storage, fileFilter: file.filter}).single('image'));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 //routes
 app.use('/admin', adminRoutes);
