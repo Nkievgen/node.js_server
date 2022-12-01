@@ -1,5 +1,5 @@
 module.exports = (req, res, next) => {
-    if (!req.session.user) {
+    if (!res.locals.userId) {
         const firstMessage = 'Authorization required to ';
         let secondMessage;
         const path = req.path;

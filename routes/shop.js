@@ -1,8 +1,5 @@
-const path = require('path');
-
 const express = require('express');
 const router = express.Router();
-
 const shopController = require('../controllers/shop');
 const isAuth = require('../middleware/is-auth');
 
@@ -45,6 +42,10 @@ router.post('/create-order',
     shopController.postOrder
 );
 
+router.get('/orders/:orderId',
+    isAuth,
+    shopController.getInvoice
+)
 
 
 module.exports = router;

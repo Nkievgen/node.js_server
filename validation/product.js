@@ -10,13 +10,6 @@ body('title')
     .isString()
     .withMessage('Title should consist only of characters and numbers')
     .trim(),
-body('imageUrl')
-    .trim()
-    .if(
-        body('imageUrl').notEmpty()
-    )
-    .isURL()
-    .withMessage('Image URL should be a valid link'),
 body('price')
     .notEmpty()
     .withMessage('Price is a required field')

@@ -1,29 +1,32 @@
+const mongoose = require('mongoose');
 const Product = require('../models/product');
 const { validationResult } = require('express-validator');
 const messagesToLocals = require('../util/messages-to-locals');
+const deleteFile = require('../util/delete-file');
 
 const emptyProduct = {
     savedTitle: '',
     savedPrice: '',
-    savedImageUrl: '',
     savedDescription: ''
 }
 
 const renderEditProduct = function(req, res, next, prodId, savedInput = emptyProduct, validationErrors = []) {
+    if (validationErrors.length > 0) {
+        res.status(422);
+    }
     Product
         .findById(prodId)
         .then((product) => {
             if (!product){
                 throw new Error('PRODUCT_NOT_FOUND');
             }
-            if (product.userId.toString() !== req.session.user._id.toString()) {
+            if (product.userId.toString() !== res.locals.userId) {
                 throw new Error('AUTH_CHECK_FAIL');
             }
             if (savedInput === emptyProduct) {
                 savedInput = {
                     title: product.title,
                     price: product.price,
-                    imageUrl: product.imageUrl,
                     description: product.description
                 }
             }
@@ -37,14 +40,13 @@ const renderEditProduct = function(req, res, next, prodId, savedInput = emptyPro
             })
         })
         .catch(err => {
-            console.log(err);
             let viewErrMessage;
             switch(err.message){
                 case 'AUTH_CHECK_FAIL':
                     viewErrMessage = 'Authorization check failed';
                     break;
                 default:
-                    viewErrMessage = 'Unexpected error';
+                    next(err);
                     break;
             }
             req.flash('error', viewErrMessage);
@@ -53,6 +55,9 @@ const renderEditProduct = function(req, res, next, prodId, savedInput = emptyPro
 }
 
 const renderAddProduct = function(req, res, next, savedInput = emptyProduct, validationErrors = []) {
+    if (validationErrors.length > 0) {
+        res.status(422);
+    }
     res.render('./admin/edit-product', {
         pageTitle: 'Add Product',
         path: '/admin/add-product',
@@ -62,9 +67,9 @@ const renderAddProduct = function(req, res, next, savedInput = emptyProduct, val
     })
 }
 
-//fetching all products from the db and rendering product list page
+//fetching current user's products from the db and rendering product list page
 exports.getProductList = (req, res, next) => {
-    sessionUserId = req.session.user._id;
+    sessionUserId = res.locals.userId;
     Product
         .find({
             userId: sessionUserId
@@ -77,9 +82,7 @@ exports.getProductList = (req, res, next) => {
             });
         })
         .catch(err => {
-            console.log(err);
-            req.flash('error', 'Unexpected error');
-            res.redirect('/');
+            next(err);
         });
 }
 
@@ -90,28 +93,32 @@ exports.getAddProduct = (req, res, next) => {
 
 //adding a new product to the db, redirecting to add product
 exports.postAddProduct = (req, res, next) => {
-    const userId = req.session.user._id;
+    const userId = res.locals.userId;
     const title = req.body.title;
     const price = req.body.price;
-    const imageUrl = req.body.imageUrl;
+    const image = req.file;
     const description = req.body.description;
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        messagesToLocals(errors.array(), res);
+    errArray = errors.array();
+    if (!image) {
+        errArray.push({msg: 'File should be a *.png or a *.jpeg image', param: 'image'});
+    }
+    if (errArray.length > 0) {
+        messagesToLocals(errArray, res);
         const savedInput = {
             title: title,
             price: price,
-            imageUrl: imageUrl,
             description: description
         };
-        return renderAddProduct(req, res, next, savedInput, errors.array());
+        return renderAddProduct(req, res, next, savedInput, errArray);
     }
+    const imageUrl = image.path;
     const product = new Product({
         title: title,
         price: price,
         description: description,
         imageUrl: imageUrl,
-        userId: userId
+        userId: mongoose.Types.ObjectId(userId)
     });
     product
         .save()
@@ -119,9 +126,7 @@ exports.postAddProduct = (req, res, next) => {
             res.redirect('/admin/add-product');
         })
         .catch(err => {
-            console.log(err);
-            req.flash('error', 'Unexpected error');
-            res.redirect('/');
+            next(err);
         });
 }
 
@@ -140,7 +145,7 @@ exports.postEditProduct = (req, res, next) => {
     const productId = req.body.productId;
     const updatedTitle = req.body.title;
     const updatedPrice = req.body.price;
-    const updatedImageUrl = req.body.imageUrl;
+    const image = req.file;
     const updatedDescription = req.body.description;
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -148,7 +153,6 @@ exports.postEditProduct = (req, res, next) => {
         const savedInput = {
             title: updatedTitle,
             price: updatedPrice,
-            imageUrl: updatedImageUrl,
             description: updatedDescription
         }
         return renderEditProduct(req, res, next, productId, savedInput, errors.array());
@@ -156,27 +160,29 @@ exports.postEditProduct = (req, res, next) => {
     Product
         .findById(productId)
         .then(product => {
-            if (product.userId.toString() !== req.session.user._id.toString()) {
+            if (product.userId.toString() !== res.locals.userId) {
                 throw new Error('AUTH_CHECK_FAIL');
             }
             product.title = updatedTitle;
             product.price = updatedPrice;
+            if (image) {
+                deleteFile(product.imageUrl);
+                product.imageUrl = image.path;
+            }
             product.description = updatedDescription;
-            product.imageUrl = updatedImageUrl;
             return product.save();
         })
         .then(() => {
             res.redirect('/admin/product-list');
         })
         .catch(err => {
-            console.log(err);
             let viewErrMessage;
             switch(err.message){
                 case 'AUTH_CHECK_FAIL':
                     viewErrMessage = 'Authorization check failed';
                     break;
                 default:
-                    viewErrMessage = 'Unexpected error';
+                    next(err);
                     break;
             }
             req.flash('error', viewErrMessage);
@@ -187,15 +193,21 @@ exports.postEditProduct = (req, res, next) => {
 //deleting a product from the db and redirecting to product list
 exports.postDeleteProduct = (req, res, next) => {
     const productId = req.body.productId;
+    let imagePath;
     Product
-        .deleteOne({
-            _id: productId,
-            userId: req.session.user._id
+        .findById(productId)
+        .then(product => {
+            imagePath = product.imageUrl;
+            return Product.deleteOne({
+                _id: productId,
+                userId: res.locals.userId
+            })
         })
         .then(result => {
             if (result.deletedCount == 0) {
                 throw new Error('WRONG_AUTH_OR_ID');
             }
+            deleteFile(imagePath);
             res.redirect('/admin/product-list');
         })
         .catch(err => {
@@ -206,7 +218,7 @@ exports.postDeleteProduct = (req, res, next) => {
                     viewErrMessage = 'Authorization check failed';
                     break;
                 default:
-                    viewErrMessage = 'Unexpected error';
+                    next(err);
                     break;
             }
             req.flash('error', viewErrMessage);
