@@ -1,7 +1,7 @@
 module.exports = (req, res, next) => {
     res.locals.csrfToken = req.csrfToken();
     if (req.session.user) {
-        res.locals.userId = req.session.user._id;
+        res.locals.userId = req.session.user._id.toString();
         res.locals.userEmail = req.session.user.email;
     } else {
         res.locals.userId = false;

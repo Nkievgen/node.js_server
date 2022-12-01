@@ -6,7 +6,6 @@ const { validationResult } = require('express-validator');
 const User = require('../models/user');
 const messagesToLocals = require('../util/messages-to-locals');
 const SENDGRID_API_KEY = require('../keys/sendgrid-key');
-const passToErrHandler = require('../util/pass-to-err-handler');
 
 const transporter = nodemailer.createTransport(sendgridTransport({
     auth: {
@@ -83,7 +82,7 @@ exports.postLogin = (req, res, next) => {
                     req.flash('error', 'Invalid email or password');
                     break;
                 default:
-                    passToErrHandler(err, req, res, next);
+                    next(err);
                     break;
             }
             res.redirect('/login');
@@ -105,7 +104,7 @@ exports.postSignup = (req, res, next) => {
         return renderSignup(req, res, next, email, errors.array());
     }
     User
-        .find({
+        .findOne({
             email: email
         })
         .then(user => {
@@ -143,7 +142,7 @@ exports.postSignup = (req, res, next) => {
                 const wrongEmail = [{param: 'email'}]
                 renderSignup(req, res, next, email, wrongEmail);
             } else {
-                passToErrHandler(err, req, res, next);
+                next(err);
             }
         });
 }
@@ -152,7 +151,7 @@ exports.postSignup = (req, res, next) => {
 exports.postLogout =(req, res, next) => {
     req.session.destroy(err => {
         if (err) {
-            passToErrHandler(err, req, res, next);
+            next(err);
         }
         res.redirect('/');
     });
@@ -169,7 +168,7 @@ exports.getReset = (req, res, next) => {
 exports.postReset = (req, res, next) => {
     crypto.randomBytes(32, (err, buffer) => {
         if (err) {
-            passToErrHandler(err, req, res, next);
+            next(err);
         }
         const token = buffer.toString('hex');
         const userEmail = req.body.email;
@@ -203,7 +202,7 @@ exports.postReset = (req, res, next) => {
                         req.flash('error', 'No account found with that email address');
                         break;
                     default:
-                        passToErrHandler(err, req, res, next);
+                        next(err);
                         break;
                 }
                 res.redirect('/password-reset');
@@ -236,7 +235,7 @@ exports.getSetPassword = (req, res, next) => {
                     req.flash('error', 'Invalid or overdue password reset link');
                     break;
                 default:
-                    passToErrHandler(err, req, res, next);
+                    next(err);
                     break;
             }
             res.redirect('/login');
@@ -277,7 +276,7 @@ exports.postSetPassword = (req, res, next) => {
                     req.flash('error', 'Invalid or overdue password reset link');
                     break;
                 default:
-                    passToErrHandler(err, req, res, next);
+                    next(err);
                     break;
             }
             res.redirect('/login');

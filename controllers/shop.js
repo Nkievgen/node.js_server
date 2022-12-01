@@ -1,7 +1,9 @@
+const fs = require('fs');
+const path = require('path');
 const Product = require('../models/product');
 const Order = require('../models/order');
 const User = require('../models/user');
-const passToErrHandler = require('../util/pass-to-err-handler');
+const PDFDocument = require('pdfkit');
 
 //fetching products from the db and rendering index page
 exports.getIndex = (req, res, next) => {
@@ -15,7 +17,7 @@ exports.getIndex = (req, res, next) => {
             });
         })
         .catch(err => {
-            passToErrHandler(err, req, res, next);  
+            next(err);  
         });
 }
 
@@ -31,7 +33,7 @@ exports.getProductList = (req, res, next) => {
             });
         })
         .catch(err => {
-            passToErrHandler(err, req, res, next);  
+            next(err);  
         });
 }
 
@@ -48,13 +50,13 @@ exports.getProductDetails = (req, res, next) => {
             });
         })
         .catch(err => {
-            passToErrHandler(err, req, res, next);          
+            next(err);          
         });
 }
 
 //fetching cart data from the db and rendering cart page
 exports.getCart = (req, res, next) => {
-    const userId = req.session.user._id;
+    const userId = res.locals.userId;
     User
         .findById(userId)
         .populate('cart.items.productId')
@@ -67,13 +69,13 @@ exports.getCart = (req, res, next) => {
             });
         })
         .catch(err => {
-            passToErrHandler(err, req, res, next);
+            next(err);
         });
 }
 
 //getting prod id from req, fetching and adding to cart prod data from the db, redirecting to cart
 exports.postCart = (req, res, next) => {
-    const userId = req.session.user._id;
+    const userId = res.locals.userId;
     const cartProductId = req.body.productId;
     let foundProduct;
     Product
@@ -89,13 +91,13 @@ exports.postCart = (req, res, next) => {
             res.redirect('/cart');
         })
         .catch(err => {
-            passToErrHandler(err, req, res, next);  
+            next(err);  
         });
 }
 
 //geting prod id from req, removing product from db and redirecting to cart
 exports.removeFromCart = (req, res, next) => {
-    const userId = req.session.user._id;
+    const userId = res.locals.userId;
     const prodId = req.body.productId;
     User
         .findById(userId)
@@ -106,7 +108,7 @@ exports.removeFromCart = (req, res, next) => {
             res.redirect('/cart');
         })
         .catch(err => {
-            passToErrHandler(err, req, res, next);
+            next(err);
         });
 }
 
@@ -119,8 +121,7 @@ exports.removeFromCart = (req, res, next) => {
 
 //fetching all orders that match userid from the db, populating them with product data and rendering orders page
 exports.getOrders = (req, res, next) => {
-    const userId = req.session.user._id;
-    
+    const userId = res.locals.userId;
     Order
         .find({
             userId: userId,
@@ -135,13 +136,13 @@ exports.getOrders = (req, res, next) => {
             });
         })
         .catch(err => {
-            passToErrHandler(err, req, res, next);
+            next(err);
         }); 
 }
 
 //creating a new order from current user cart products and clearing current user cart, redirecting to orders
 exports.postOrder = (req, res, next) => {
-    const userId = req.session.user._id;
+    const userId = res.locals.userId;
     User
         .findById(userId)
         .then(user => {
@@ -151,10 +152,65 @@ exports.postOrder = (req, res, next) => {
             res.redirect('/orders');
         })
         .catch(err => {
-            passToErrHandler(err, req, res, next);
+            next(err);
         });
 }
 
+exports.getInvoice = (req, res, next) => {
+    const orderId = req.params.orderId;
+    Order
+        .findById(orderId)
+        .populate('items.productId')
+        .then(order => {
+            if (!order) {
+                throw new Error('NO_ORDER_FOUND');
+            }
+            if (order.userId.toString() !== res.locals.userId) {
+                throw new Error('AUTH_CHECK_FAILED');
+            }
+            const invoiceName = 'invoice_' + orderId + '.pdf';
+            //const invoicePath = path.join('data','invoice', invoiceName)
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
+            const pdfDoc = new PDFDocument();
+            pdfDoc.pipe(res);
+            pdfDoc.fontSize(26).text('Invoice');
+            pdfDoc.fontSize(20).text('_______________________');
+            pdfDoc.moveDown();
+            let counter = 0;
+            order.items.forEach(prod => {
+                counter = counter + (prod.quantity * prod.productId.price);
+                pdfDoc.fontSize(14).text('-' + prod.productId.title + ' (' + prod.quantity + ') $' + (prod.productId.price * prod.quantity));
+            });
+            pdfDoc.fontSize(20).text('_______________________');
+            pdfDoc.moveDown();
+            pdfDoc.fontSize(20).text('Total price: $' + counter);
+            pdfDoc.end();
+        })
+        // .then(() => {
+            // fs.access(invoicePath, err => {
+            //     if(err) {
+            //         next(new Error('FILE_NOT_FOUND'));
+            //     } else {
+            //         const file = fs.createReadStream(invoicePath);
+            //         res.setHeader('Content-Type', 'application/pdf');
+            //         res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
+            //         file.pipe(res);
+            //     }
+            // });
+        // })
+        .catch(err => {
+            switch(err.message) {
+                case 'AUTH_CHECK_FAILED':
+                    req.flash('error', 'Authorization check failed');
+                    res.redirect('/orders');
+                    break;
+                default:
+                    next(err);
+                    break;
+            }
+        });
+}
 
 
 
