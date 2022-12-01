@@ -6,7 +6,7 @@
         <main>
             <%- include('../includes/message.ejs') %>
             <% if(orders.length <= 0) {%>
-            <h1>Nothing there!</h1>
+            <h1>Order list empty</h1>
             <% } else { %>
                 <ul>
                     <% orders.forEach(order => { %>
