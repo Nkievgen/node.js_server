@@ -1,4 +1,4 @@
-<%- include('../includes/head.ejs') %>
+`<%- include('../includes/head.ejs') %>
 <link rel="stylesheet" href="/css/product.css">
 </head>
 
@@ -37,5 +37,6 @@
             <% } else { %>
                 <h1>No Products Found!</h1>
             <% } %>
+            <%- include('../includes/pagination.ejs') %>
     </main>
 <%- include('../includes/end.ejs') %>

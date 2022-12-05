@@ -4,36 +4,67 @@ const Product = require('../models/product');
 const Order = require('../models/order');
 const User = require('../models/user');
 const PDFDocument = require('pdfkit');
+const pgs = require('../util/pagination');
 
 //fetching products from the db and rendering index page
 exports.getIndex = (req, res, next) => {
+    let totalItems;
+    const page = pgs.currentPage(req.query.page);
+
     Product
         .find()
+        .countDocuments()
+        .then(numProducts => {
+            totalItems = numProducts;
+            if ((page > pgs.findLastPage(totalItems))  && (page > 1)) {
+                throw new Error('EXCEEDS_LAST_PAGE');
+            }
+            return Product
+                .find()
+                .skip(pgs.previousPage(page) * pgs.perPage)
+                .limit(pgs.perPage);
+        })
         .then(products => {
             res.render('./shop/index', {
                 prods: products,
                 pageTitle: "Shop",
-                path: "/"
+                path: "/",
+                pg: pgs.toView(page, totalItems)
             });
         })
         .catch(err => {
-            next(err);  
+            next(err);
         });
 }
 
 //fetching products from the db and rendering index page
 exports.getProductList = (req, res, next) => {
+    let totalItems;
+    const page = pgs.currentPage(req.query.page);
+
     Product
         .find()
+        .countDocuments()
+        .then(numProducts => {
+            totalItems = numProducts;
+            if ((page > pgs.findLastPage(totalItems))  && (page > 1)) {
+                throw new Error('EXCEEDS_LAST_PAGE');
+            }
+            return Product
+                .find()
+                .skip(pgs.previousPage(page) * pgs.perPage)
+                .limit(pgs.perPage);
+        })
         .then(products => {
-            res.render('./shop/product-list',{
+            res.render('./shop/product-list', {
                 prods: products,
                 pageTitle: "Product List",
-                path: "/product-list"
+                path: "/product-list",
+                pg: pgs.toView(page, totalItems)
             });
         })
         .catch(err => {
-            next(err);  
+            next(err);
         });
 }
 
@@ -43,14 +74,14 @@ exports.getProductDetails = (req, res, next) => {
     Product
         .findById(searchId)
         .then(product => {
-            res.render('./shop/product-details',{
+            res.render('./shop/product-details', {
                 product: product,
                 pageTitle: product.title,
                 path: "/product-list"
             });
         })
         .catch(err => {
-            next(err);          
+            next(err);
         });
 }
 
@@ -91,7 +122,7 @@ exports.postCart = (req, res, next) => {
             res.redirect('/cart');
         })
         .catch(err => {
-            next(err);  
+            next(err);
         });
 }
 
@@ -137,7 +168,7 @@ exports.getOrders = (req, res, next) => {
         })
         .catch(err => {
             next(err);
-        }); 
+        });
 }
 
 //creating a new order from current user cart products and clearing current user cart, redirecting to orders
@@ -187,28 +218,8 @@ exports.getInvoice = (req, res, next) => {
             pdfDoc.fontSize(20).text('Total price: $' + counter);
             pdfDoc.end();
         })
-        // .then(() => {
-            // fs.access(invoicePath, err => {
-            //     if(err) {
-            //         next(new Error('FILE_NOT_FOUND'));
-            //     } else {
-            //         const file = fs.createReadStream(invoicePath);
-            //         res.setHeader('Content-Type', 'application/pdf');
-            //         res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
-            //         file.pipe(res);
-            //     }
-            // });
-        // })
         .catch(err => {
-            switch(err.message) {
-                case 'AUTH_CHECK_FAILED':
-                    req.flash('error', 'Authorization check failed');
-                    res.redirect('/orders');
-                    break;
-                default:
-                    next(err);
-                    break;
-            }
+            next(err);
         });
 }
 

@@ -46,13 +46,14 @@ app.use(
         store: store
     })
 );
-app.use(flash());
-app.use(csrfProtection);
-app.use(setLocals); //setting userId, userEmail, messages and csrf token in locals
 
 app.use(multer({storage: file.storage, fileFilter: file.filter}).single('image'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/images', express.static(path.join(__dirname, 'images')));
+
+app.use(flash());
+app.use(csrfProtection);
+app.use(setLocals); //setting userId, userEmail, messages and csrf token in locals
 
 //routes
 app.use('/admin', adminRoutes);
