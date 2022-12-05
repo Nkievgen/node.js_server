@@ -1,21 +1,21 @@
 <section class="pagination">
     <% if(pg.renderFirstButton === true) { %>
-        <a href="/?page=1">1</a>
+        <a href="?page=1">1</a>
         <% if(pg.leftDots === true) { %>
             <a>...</a>
         <% } %>
     <% } %>
     <% for(let i = pg.currentPage - pg.prevButtons; i < pg.currentPage; i++) { %>
-     <a href="/?page=<%= i %>"><%= i %></a>
+     <a href="?page=<%= i %>"><%= i %></a>
     <% } %>
     <a class="active"><%= pg.currentPage %></a>
     <% for(let i = pg.currentPage + 1; i < (pg.currentPage + 1) + pg.nextButtons; i++) { %>
-        <a href="/?page=<%= i %>"><%= i %></a>
+        <a href="?page=<%= i %>"><%= i %></a>
     <% } %>
     <% if(pg.renderLastButton === true) { %>
         <% if(pg.rightDots === true) { %>
             <a>...</a>
         <% } %>
-        <a href="/?page=<%= pg.lastPage %>"><%= pg.lastPage %></a>
+        <a href="?page=<%= pg.lastPage %>"><%= pg.lastPage %></a>
     <% } %>
 </section>
