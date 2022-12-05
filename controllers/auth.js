@@ -74,18 +74,7 @@ exports.postLogin = (req, res, next) => {
             }
         })
         .catch(err=> {
-            switch (err.message) {
-                case 'EMAIL_NOT_FOUND':
-                    req.flash('error', 'Invalid email or password');
-                    break;
-                case 'WRONG_PASSWORD':
-                    req.flash('error', 'Invalid email or password');
-                    break;
-                default:
-                    next(err);
-                    break;
-            }
-            res.redirect('/login');
+            next(err);
         })
 }
 
@@ -178,7 +167,7 @@ exports.postReset = (req, res, next) => {
             })
             .then(user => {
                 if (!user) {
-                    throw new Error('USER_NOT_FOUND');
+                    throw new Error('RESET_USER_NOT_FOUND');
                 }
                 user.passwordReset.token = token;
                 const oneHour = 3600000;
@@ -197,15 +186,7 @@ exports.postReset = (req, res, next) => {
                 res.redirect('/login');  
             })
             .catch(err => {
-                switch(err.message) {
-                    case 'USER_NOT_FOUND':
-                        req.flash('error', 'No account found with that email address');
-                        break;
-                    default:
-                        next(err);
-                        break;
-                }
-                res.redirect('/password-reset');
+                next(err);
             });
     })
 }
@@ -230,15 +211,7 @@ exports.getSetPassword = (req, res, next) => {
             });
         })
         .catch(err => {
-            switch(err.message) {
-                case 'USER_NOT_FOUND':
-                    req.flash('error', 'Invalid or overdue password reset link');
-                    break;
-                default:
-                    next(err);
-                    break;
-            }
-            res.redirect('/login');
+            next(err);
         });
 }
 
@@ -271,14 +244,6 @@ exports.postSetPassword = (req, res, next) => {
             res.redirect('/login');
         })
         .catch(err => {
-            switch(err.message) {
-                case 'USER_NOT_FOUND':
-                    req.flash('error', 'Invalid or overdue password reset link');
-                    break;
-                default:
-                    next(err);
-                    break;
-            }
-            res.redirect('/login');
+            next(err);
         });
 }

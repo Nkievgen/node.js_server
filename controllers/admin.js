@@ -3,6 +3,7 @@ const Product = require('../models/product');
 const { validationResult } = require('express-validator');
 const messagesToLocals = require('../util/messages-to-locals');
 const deleteFile = require('../util/delete-file');
+const pgs = require('../util/pagination');
 
 const emptyProduct = {
     savedTitle: '',
@@ -21,7 +22,7 @@ const renderEditProduct = function(req, res, next, prodId, savedInput = emptyPro
                 throw new Error('PRODUCT_NOT_FOUND');
             }
             if (product.userId.toString() !== res.locals.userId) {
-                throw new Error('AUTH_CHECK_FAIL');
+                throw new Error('AUTH_CHECK_FAILED');
             }
             if (savedInput === emptyProduct) {
                 savedInput = {
@@ -40,17 +41,7 @@ const renderEditProduct = function(req, res, next, prodId, savedInput = emptyPro
             })
         })
         .catch(err => {
-            let viewErrMessage;
-            switch(err.message){
-                case 'AUTH_CHECK_FAIL':
-                    viewErrMessage = 'Authorization check failed';
-                    break;
-                default:
-                    next(err);
-                    break;
-            }
-            req.flash('error', viewErrMessage);
-            res.redirect('/admin/product-list');
+            next(err);
         });
 }
 
@@ -69,16 +60,32 @@ const renderAddProduct = function(req, res, next, savedInput = emptyProduct, val
 
 //fetching current user's products from the db and rendering product list page
 exports.getProductList = (req, res, next) => {
+    let totalItems;
+    const page = pgs.currentPage(req.query.page);
     sessionUserId = res.locals.userId;
     Product
         .find({
             userId: sessionUserId
         })
+        .countDocuments()
+        .then(numProducts => {
+            totalItems = numProducts;
+            if ((page > pgs.findLastPage(totalItems)) && (page > 1)) {
+                throw new Error('EXCEEDS_LAST_PAGE');
+            }
+            return Product
+                .find({
+                    userId: sessionUserId
+                })
+                .skip(pgs.previousPage(page) * pgs.perPage)
+                .limit(pgs.perPage);
+        })
         .then(products => {
             res.render('./admin/product-list',{
                 prods: products,
                 pageTitle: "Admin Product List",
-                path: "/admin/product-list"
+                path: "/admin/product-list",
+                pg: pgs.toView(page, totalItems)
             });
         })
         .catch(err => {
@@ -161,7 +168,7 @@ exports.postEditProduct = (req, res, next) => {
         .findById(productId)
         .then(product => {
             if (product.userId.toString() !== res.locals.userId) {
-                throw new Error('AUTH_CHECK_FAIL');
+                throw new Error('AUTH_CHECK_FAILED');
             }
             product.title = updatedTitle;
             product.price = updatedPrice;
@@ -176,17 +183,7 @@ exports.postEditProduct = (req, res, next) => {
             res.redirect('/admin/product-list');
         })
         .catch(err => {
-            let viewErrMessage;
-            switch(err.message){
-                case 'AUTH_CHECK_FAIL':
-                    viewErrMessage = 'Authorization check failed';
-                    break;
-                default:
-                    next(err);
-                    break;
-            }
-            req.flash('error', viewErrMessage);
-            res.redirect('/');
+            next(err);
         });
 }
 

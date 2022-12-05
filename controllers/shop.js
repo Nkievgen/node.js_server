@@ -16,10 +16,13 @@ exports.getIndex = (req, res, next) => {
         .countDocuments()
         .then(numProducts => {
             totalItems = numProducts;
+            if ((page > pgs.findLastPage(totalItems))  && (page > 1)) {
+                throw new Error('EXCEEDS_LAST_PAGE');
+            }
             return Product
                 .find()
-                .skip((page - 1) * pgs.perPage)
-                .limit(pgs.perPage)
+                .skip(pgs.previousPage(page) * pgs.perPage)
+                .limit(pgs.perPage);
         })
         .then(products => {
             res.render('./shop/index', {
@@ -36,13 +39,28 @@ exports.getIndex = (req, res, next) => {
 
 //fetching products from the db and rendering index page
 exports.getProductList = (req, res, next) => {
+    let totalItems;
+    const page = pgs.currentPage(req.query.page);
+
     Product
         .find()
+        .countDocuments()
+        .then(numProducts => {
+            totalItems = numProducts;
+            if ((page > pgs.findLastPage(totalItems))  && (page > 1)) {
+                throw new Error('EXCEEDS_LAST_PAGE');
+            }
+            return Product
+                .find()
+                .skip(pgs.previousPage(page) * pgs.perPage)
+                .limit(pgs.perPage);
+        })
         .then(products => {
             res.render('./shop/product-list', {
                 prods: products,
                 pageTitle: "Product List",
-                path: "/product-list"
+                path: "/product-list",
+                pg: pgs.toView(page, totalItems)
             });
         })
         .catch(err => {
@@ -201,15 +219,7 @@ exports.getInvoice = (req, res, next) => {
             pdfDoc.end();
         })
         .catch(err => {
-            switch (err.message) {
-                case 'AUTH_CHECK_FAILED':
-                    req.flash('error', 'Authorization check failed');
-                    res.redirect('/orders');
-                    break;
-                default:
-                    next(err);
-                    break;
-            }
+            next(err);
         });
 }
 
