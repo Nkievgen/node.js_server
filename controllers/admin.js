@@ -188,8 +188,8 @@ exports.postEditProduct = (req, res, next) => {
 }
 
 //deleting a product from the db and redirecting to product list
-exports.postDeleteProduct = (req, res, next) => {
-    const productId = req.body.productId;
+exports.deleteProduct = (req, res, next) => {
+    const productId = req.params.productId;
     let imagePath;
     Product
         .findById(productId)
@@ -205,20 +205,13 @@ exports.postDeleteProduct = (req, res, next) => {
                 throw new Error('WRONG_AUTH_OR_ID');
             }
             deleteFile(imagePath);
-            res.redirect('/admin/product-list');
+            res.status(200).json({
+                message: 'Success'
+            });
         })
         .catch(err => {
-            console.log(err);
-            let viewErrMessage;
-            switch(err.message){
-                case 'WRONG_AUTH_OR_ID':
-                    viewErrMessage = 'Authorization check failed';
-                    break;
-                default:
-                    next(err);
-                    break;
-            }
-            req.flash('error', viewErrMessage);
-            res.redirect('/admin/product-list');
+            res.status(500).json({
+                message: 'Internal server error'
+            })
         });
 }
