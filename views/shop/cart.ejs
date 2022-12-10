@@ -9,30 +9,31 @@
             <main>
                 <%- include('../includes/message.ejs') %>
                 <% if (prods.length > 0) { %>
-                    <uv>
+                    <ul>
                         <% prods.forEach (prod => { %>
-                        <li>
-                        <span class="cart-list"><%= prod.productId.title %> (<%= prod.quantity %>)   $<%= (prod.productId.price * prod.quantity) %></span>
-                        <br>
-                        <form action="/remove-from-cart" method="POST">
-                            <input type ="hidden" name="_csrf" value="<%= csrfToken %>">
-                            <button class="btn" type="submit">Remove from cart</button>
-                            <input type="hidden" name="productId" value="<%= prod.productId._id%>">
-                            <input type="hidden" name="productPrice" value="<%= prod.productId.price%>">
-                        </form>
-                        </li>
-                        <br>
+                            <% if (prod.productId.title) {%>
+                                <li>
+                                    <span class="cart-list"><%= prod.productId.title %> (<%= prod.quantity %>)   $<%= (prod.productId.price * prod.quantity) %></span>
+                                    <br>
+                                    <form action="/remove-from-cart" method="POST">
+                                        <input type ="hidden" name="_csrf" value="<%= csrfToken %>">
+                                        <button class="btn" type="submit">Remove from cart</button>
+                                        <input type="hidden" name="productId" value="<%= prod.productId._id %>">
+                                        <input type="hidden" name="productPrice" value="<%= prod.productId.price %>">
+                                    </form>
+                                </li>
+                                <br>
+                            <% } %>
                         <% }) %>
-                    </uv>
+                    </ul>
                     <h3>
                         <% let totalPrice = 0; %>
                         <% prods.forEach (prod => {totalPrice = totalPrice + (prod.productId.price * prod.quantity)}); %>
                         Total cost: $<%= totalPrice %>
                     </h3>
-                    <form action="/create-order" method="POST">
-                        <input type ="hidden" name="_csrf" value="<%= csrfToken %>">
-                        <button type="submit" class="btn">Checkout</button>
-                    </form>
+                    <div>
+                        <a class="btn" href="/cart/checkout">Order Now!</a>
+                    </div>
                     <% } else { %>
                         <h1>Your cart is empty!</h1>
                         <% } %>

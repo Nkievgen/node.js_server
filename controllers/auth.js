@@ -58,7 +58,7 @@ exports.postLogin = (req, res, next) => {
         })
         .then(user => {
             if(!user) {
-                throw new Error('EMAIL_NOT_FOUND');
+                throw new Error('POST_LOGIN_EMAIL_NOT_FOUND');
             }
             userData = user;
             return bcrypt.compare(password, user.password);
@@ -70,7 +70,7 @@ exports.postLogin = (req, res, next) => {
                     res.redirect('/');
                 });
             } else {
-                throw new Error('WRONG_PASSWORD');
+                throw new Error('POST_LOGIN_WRONG_PASSWORD');
             }
         })
         .catch(err=> {
@@ -167,11 +167,11 @@ exports.postReset = (req, res, next) => {
             })
             .then(user => {
                 if (!user) {
-                    throw new Error('RESET_USER_NOT_FOUND');
+                    throw new Error('POST_RESET_USER_NOT_FOUND');
                 }
                 user.passwordReset.token = token;
-                const oneHour = 3600000;
-                user.passwordReset.expiration = Date.now() + oneHour;
+                const ONE_HOUR = 3600000;
+                user.passwordReset.expiration = Date.now() + ONE_HOUR;
                 return user.save();
             })
             .then(() => {
@@ -200,7 +200,7 @@ exports.getSetPassword = (req, res, next) => {
         })
         .then(user => {
             if (!user){
-                throw new Error('USER_NOT_FOUND');
+                throw new Error('GET_SET_PASS_USER_NOT_FOUND');
             }
             const foundUserId = user._id.toString();
             res.render('./auth/set-password', {
@@ -228,7 +228,7 @@ exports.postSetPassword = (req, res, next) => {
         })
         .then(user => {
             if (!user) {
-                throw new Error('USER_NOT_FOUND');
+                throw new Error('POST_SET_PASS_USER_NOT_FOUND');
             }
             foundUser = user;
             return bcrypt.hash(newPassword, 12);

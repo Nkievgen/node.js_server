@@ -19,10 +19,10 @@ const renderEditProduct = function(req, res, next, prodId, savedInput = emptyPro
         .findById(prodId)
         .then((product) => {
             if (!product){
-                throw new Error('PRODUCT_NOT_FOUND');
+                throw new Error('EDIT_PRODUCT_NOT_FOUND');
             }
             if (product.userId.toString() !== res.locals.userId) {
-                throw new Error('AUTH_CHECK_FAILED');
+                throw new Error('EDIT_PRODUCT_AUTH_CHECK_FAILED');
             }
             if (savedInput === emptyProduct) {
                 savedInput = {
@@ -71,7 +71,7 @@ exports.getProductList = (req, res, next) => {
         .then(numProducts => {
             totalItems = numProducts;
             if ((page > pgs.findLastPage(totalItems)) && (page > 1)) {
-                throw new Error('EXCEEDS_LAST_PAGE');
+                throw new Error('ADMIN_PRODUCT_LIST_EXCEEDS_LAST_PAGE');
             }
             return Product
                 .find({
@@ -168,7 +168,7 @@ exports.postEditProduct = (req, res, next) => {
         .findById(productId)
         .then(product => {
             if (product.userId.toString() !== res.locals.userId) {
-                throw new Error('AUTH_CHECK_FAILED');
+                throw new Error('POST_EDIT_PRODUCT_AUTH_CHECK_FAILED');
             }
             product.title = updatedTitle;
             product.price = updatedPrice;
@@ -188,8 +188,8 @@ exports.postEditProduct = (req, res, next) => {
 }
 
 //deleting a product from the db and redirecting to product list
-exports.postDeleteProduct = (req, res, next) => {
-    const productId = req.body.productId;
+exports.deleteProduct = (req, res, next) => {
+    const productId = req.params.productId;
     let imagePath;
     Product
         .findById(productId)
@@ -202,23 +202,14 @@ exports.postDeleteProduct = (req, res, next) => {
         })
         .then(result => {
             if (result.deletedCount == 0) {
-                throw new Error('WRONG_AUTH_OR_ID');
+                throw new Error('DELETE_PRODUCT_WRONG_AUTH_OR_ID');
             }
             deleteFile(imagePath);
-            res.redirect('/admin/product-list');
+            res.status(200).json({
+                message: 'Success'
+            });
         })
         .catch(err => {
-            console.log(err);
-            let viewErrMessage;
-            switch(err.message){
-                case 'WRONG_AUTH_OR_ID':
-                    viewErrMessage = 'Authorization check failed';
-                    break;
-                default:
-                    next(err);
-                    break;
-            }
-            req.flash('error', viewErrMessage);
-            res.redirect('/admin/product-list');
+            next(err);
         });
 }

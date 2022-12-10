@@ -5,6 +5,9 @@ const Order = require('../models/order');
 const User = require('../models/user');
 const PDFDocument = require('pdfkit');
 const pgs = require('../util/pagination');
+const stripeKey = require('../keys/stripe-key');
+const stripe = require('stripe')(stripeKey);
+const promiseToken = require('../util/promise-token');
 
 //fetching products from the db and rendering index page
 exports.getIndex = (req, res, next) => {
@@ -17,7 +20,7 @@ exports.getIndex = (req, res, next) => {
         .then(numProducts => {
             totalItems = numProducts;
             if ((page > pgs.findLastPage(totalItems))  && (page > 1)) {
-                throw new Error('EXCEEDS_LAST_PAGE');
+                throw new Error('GET_INDEX_EXCEEDS_LAST_PAGE');
             }
             return Product
                 .find()
@@ -48,7 +51,7 @@ exports.getProductList = (req, res, next) => {
         .then(numProducts => {
             totalItems = numProducts;
             if ((page > pgs.findLastPage(totalItems))  && (page > 1)) {
-                throw new Error('EXCEEDS_LAST_PAGE');
+                throw new Error('GET_PRODUCT_LIST_EXCEEDS_LAST_PAGE');
             }
             return Product
                 .find()
@@ -92,7 +95,9 @@ exports.getCart = (req, res, next) => {
         .findById(userId)
         .populate('cart.items.productId')
         .then(user => {
-            const products = user.cart.items;
+            const products = user.cart.items.filter(product => 
+                product.productId !== null
+            );
             res.render('./shop/cart', {
                 pageTitle: "Cart",
                 path: "/cart",
@@ -143,13 +148,6 @@ exports.removeFromCart = (req, res, next) => {
         });
 }
 
-// exports.getCheckout = (req, res, next) => {
-//     res.render('./shop/checkout', {
-//         pageTitle: "Checkout",
-//         path: "/cart/checkout"
-//     });
-// }
-
 //fetching all orders that match userid from the db, populating them with product data and rendering orders page
 exports.getOrders = (req, res, next) => {
     const userId = res.locals.userId;
@@ -160,6 +158,11 @@ exports.getOrders = (req, res, next) => {
         .select('items')
         .populate('items.productId', 'title')
         .then(orders => {
+            orders.forEach(order => {
+                order.items.forEach(item => {
+                    console.log(item);
+                });
+            });
             res.render('./shop/orders', {
                 pageTitle: "Orders",
                 path: "/orders",
@@ -171,12 +174,87 @@ exports.getOrders = (req, res, next) => {
         });
 }
 
-//creating a new order from current user cart products and clearing current user cart, redirecting to orders
-exports.postOrder = (req, res, next) => {
+exports.getCheckout = (req, res, next) => {
+    const userId = res.locals.userId;
+    let products;
+    let totalCost = 0;
+    let token;
+    promiseToken
+        .then(createdToken => {
+            token = createdToken;
+            return User.findById(userId).populate('cart.items.productId');
+        })
+        .then(user => {
+            products = user.cart.items.filter(product => 
+                product.productId !== null
+            );
+            products.forEach(product => {
+                totalCost += product.quantity * product.productId.price;
+            })
+            user.checkout.token = token;
+            const ONE_HOUR = 3600000;
+            user.checkout.expiration = Date.now() + (ONE_HOUR * 24);
+            return user.save();
+        })
+        .then(() => {
+            let itemsArray = [];
+            products.map(product => {
+                let itemObject = {
+                    price_data: {
+                        currency: 'usd',
+                        product_data: {
+                            name: product.productId.title,
+                        },
+                        unit_amount: product.productId.price * 100
+                    },
+                    quantity: product.quantity
+                };
+                if (product.productId.description){
+                    itemObject.price_data.product_data.description = product.productId.description
+                }
+                return itemsArray.push(itemObject);
+            });
+            return stripe.checkout.sessions.create({
+                line_items: itemsArray,
+                mode: 'payment',
+                success_url: req.protocol + '://' + req.get('host') + '/cart/checkout/success/' + token,
+                cancel_url: req.protocol + '://' + req.get('host') + '/cart/checkout/cancel/' + token
+            });
+        })
+        .then(session => {
+            res.render('./shop/checkout', {
+                pageTitle: "Checkout",
+                path: "/cart/checkout",
+                prods: products,
+                totalCost: totalCost,
+                sessionId: session.id
+            });
+        })
+        .catch(err => {
+            next(err);
+        });
+    
+}
+
+exports.getCheckoutSuccess = (req, res, next) => {
+    console.log('checkout successful with token id ' + req.params.token);
+    const token = req.params.token;
     const userId = res.locals.userId;
     User
         .findById(userId)
         .then(user => {
+            if(user.checkout.token !== token) {
+                user.checkout.expiration = undefined;
+                user.checkout.token = undefined;
+                user.save();
+                throw new Error('GET_CHECKOUT_SUCCESS_WRONG_TOKEN');
+            } 
+            if (user.checkout.expiration < Date.now()) {
+                user.checkout.expiration = undefined;
+                user.checkout.token = undefined;
+                user.save();
+                throw new Error('GET_CHECKOUT_SUCCESS_EXPIRED');
+            }
             return user.addOrder();
         })
         .then(() => {
@@ -187,6 +265,35 @@ exports.postOrder = (req, res, next) => {
         });
 }
 
+exports.getCheckoutCancel = (req, res, next) => {
+    const token = req.params.token;
+    const userId = res.locals.userId;
+    User
+        .findById(userId)
+        .then(user => {
+            if(user.checkout.token !== token) {
+                throw new Error('GET_CHECKOUT_CANCEL_WRONG_TOKEN');
+            }
+            if (user.checkout.expiration < Date.now()) {
+                throw new Error('GET_CHECKOUT_CANCEL_EXPIRED');
+            }
+            user.checkout.expiration = undefined;
+            user.checkout.token = undefined;
+            return user.save();
+        })
+        .then(() => {
+            res.redirect('/cart/checkout');
+        })
+        .catch(err => {
+            next(err);
+        });
+}
+
+//creating a new order from current user cart products and clearing current user cart, redirecting to orders
+// exports.postOrder = (req, res, next) => {
+    
+// }
+
 exports.getInvoice = (req, res, next) => {
     const orderId = req.params.orderId;
     Order
@@ -194,10 +301,10 @@ exports.getInvoice = (req, res, next) => {
         .populate('items.productId')
         .then(order => {
             if (!order) {
-                throw new Error('NO_ORDER_FOUND');
+                throw new Error('GET_INVOICE_NO_ORDER_FOUND');
             }
             if (order.userId.toString() !== res.locals.userId) {
-                throw new Error('AUTH_CHECK_FAILED');
+                throw new Error('GET_INVOICE_AUTH_CHECK_FAILED');
             }
             const invoiceName = 'invoice_' + orderId + '.pdf';
             //const invoicePath = path.join('data','invoice', invoiceName)
