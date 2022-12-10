@@ -2,6 +2,7 @@ notes.txt
 .vscode
 mongodb-uri.js
 sendgrid-key.js
+stripe-key.js
 images/
 
 # Logs

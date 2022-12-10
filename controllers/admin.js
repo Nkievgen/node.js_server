@@ -19,10 +19,10 @@ const renderEditProduct = function(req, res, next, prodId, savedInput = emptyPro
         .findById(prodId)
         .then((product) => {
             if (!product){
-                throw new Error('PRODUCT_NOT_FOUND');
+                throw new Error('EDIT_PRODUCT_NOT_FOUND');
             }
             if (product.userId.toString() !== res.locals.userId) {
-                throw new Error('AUTH_CHECK_FAILED');
+                throw new Error('EDIT_PRODUCT_AUTH_CHECK_FAILED');
             }
             if (savedInput === emptyProduct) {
                 savedInput = {
@@ -71,7 +71,7 @@ exports.getProductList = (req, res, next) => {
         .then(numProducts => {
             totalItems = numProducts;
             if ((page > pgs.findLastPage(totalItems)) && (page > 1)) {
-                throw new Error('EXCEEDS_LAST_PAGE');
+                throw new Error('ADMIN_PRODUCT_LIST_EXCEEDS_LAST_PAGE');
             }
             return Product
                 .find({
@@ -168,7 +168,7 @@ exports.postEditProduct = (req, res, next) => {
         .findById(productId)
         .then(product => {
             if (product.userId.toString() !== res.locals.userId) {
-                throw new Error('AUTH_CHECK_FAILED');
+                throw new Error('POST_EDIT_PRODUCT_AUTH_CHECK_FAILED');
             }
             product.title = updatedTitle;
             product.price = updatedPrice;
@@ -202,7 +202,7 @@ exports.deleteProduct = (req, res, next) => {
         })
         .then(result => {
             if (result.deletedCount == 0) {
-                throw new Error('WRONG_AUTH_OR_ID');
+                throw new Error('DELETE_PRODUCT_WRONG_AUTH_OR_ID');
             }
             deleteFile(imagePath);
             res.status(200).json({
@@ -210,8 +210,6 @@ exports.deleteProduct = (req, res, next) => {
             });
         })
         .catch(err => {
-            res.status(500).json({
-                message: 'Internal server error'
-            })
+            next(err);
         });
 }

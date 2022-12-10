@@ -14,6 +14,10 @@ const userSchema = new Schema({
         token: String,
         expiration: Date
     },
+    checkout: {
+        token: String,
+        expiration: Date
+    },
     cart: {
         items: [{
             productId: {type: Schema.Types.ObjectId, ref: 'Product', required: true},

@@ -30,17 +30,30 @@ router.post('/remove-from-cart',
     shopController.removeFromCart
 );
 
-// router.get('/cart/checkout', shopController.getCheckout);
+router.get('/cart/checkout',
+    isAuth,
+    shopController.getCheckout
+);
+
+router.get('/cart/checkout/success/:token',
+    isAuth,
+    shopController.getCheckoutSuccess
+);
+
+router.get('/cart/checkout/cancel/:token',
+    isAuth,
+    shopController.getCheckoutCancel
+);
 
 router.get('/orders',
     isAuth,
     shopController.getOrders
 );
 
-router.post('/create-order',
-    isAuth,
-    shopController.postOrder
-);
+// router.post('/create-order',
+//     isAuth,
+//     shopController.postOrder
+// );
 
 router.get('/orders/:orderId',
     isAuth,
