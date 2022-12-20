@@ -1,3 +1,5 @@
+const PORT = 4000;
+
 const path = require('path');
 
 //npm modules
@@ -67,7 +69,7 @@ mongoose
     .connect(MONGODB_URI)
     .then(() => {
         console.log('mongodb connection successfull');
-        app.listen(3000);
+        app.listen(PORT);
         console.log('listening...');
     })
     .catch(err => {
